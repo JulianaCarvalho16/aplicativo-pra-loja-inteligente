@@ -697,5 +697,73 @@
       "notes": "Cliente optou por Retirar na Loja Física (Balcão PDV)"
     }
   ],
-  "lastBackupTimestamp": "2026-10-11T15:28:11.957Z"
+  "lastBackupTimestamp": "2026-10-11T20:38:09.800Z",
+  "customers": [
+    {
+      "id": "cust-1",
+      "name": "Beatriz Lima",
+      "email": "beatriz.lima@email.com",
+      "phone": "(11) 98765-4321",
+      "cpf": "123.456.789-00",
+      "password": "123456",
+      "address": "Av. Paulista, 1000, Apto 42 - Bela Vista, São Paulo - SP",
+      "notes": "Cliente VIP • Compra frequente pelo e-commerce e retira no balcão",
+      "createdAt": "2026-09-11T17:32:47.422Z"
+    },
+    {
+      "id": "cust-2",
+      "name": "Marcos Fernandes",
+      "email": "marcos.fernandes@email.com",
+      "phone": "(11) 95345-6789",
+      "cpf": "409.182.736-54",
+      "password": "123456",
+      "address": "Rua Vergueiro, 890 - Paraíso, São Paulo - SP",
+      "notes": "Cliente de serviços técnicos e acessórios veiculares",
+      "createdAt": "2026-08-27T17:32:47.423Z"
+    },
+    {
+      "id": "cust-3",
+      "name": "Juliana Costa",
+      "email": "juliana.costa@email.com",
+      "phone": "(11) 94456-7890",
+      "cpf": "628.190.432-11",
+      "password": "123456",
+      "address": "Alameda Santos, 200 - Cerqueira César, São Paulo - SP",
+      "notes": "Costuma solicitar higienização e manutenção preventiva de smartphone",
+      "createdAt": "2026-08-12T17:32:47.423Z"
+    },
+    {
+      "id": "cust-4",
+      "name": "Carlos Mendes",
+      "email": "carlos.mendes@email.com",
+      "phone": "(11) 97123-4567",
+      "cpf": "142.983.471-20",
+      "password": "123456",
+      "address": "Rua das Flores, 120 - Jardins, São Paulo - SP",
+      "notes": "Consumidor matinal frequente de café espresso gourmet",
+      "createdAt": "2026-07-13T17:32:47.423Z"
+    },
+    {
+      "id": "cust-5",
+      "name": "Mariana Souza",
+      "email": "mariana.souza@email.com",
+      "phone": "(11) 96234-5678",
+      "cpf": "302.819.554-12",
+      "password": "123456",
+      "address": "Rua Augusta, 450 - Consolação, São Paulo - SP",
+      "notes": "Adquire periféricos e cabos reforçados para o trabalho",
+      "createdAt": "2026-09-26T17:32:47.423Z"
+    },
+    {
+      "id": "cust-6",
+      "name": "Lucas Ribeiro",
+      "email": "lucas.ribeiro@email.com",
+      "phone": "(11) 93567-8901",
+      "cpf": "831.294.019-33",
+      "password": "123456",
+      "address": "Rua Oscar Freire, 310 - Pinheiros, São Paulo - SP",
+      "notes": "Utilizou serviço de embalagem especial para presente e vestuário premium",
+      "createdAt": "2026-09-21T17:32:47.423Z"
+    }
+  ]
 }

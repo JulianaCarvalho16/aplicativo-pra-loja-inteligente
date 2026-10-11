@@ -1,11 +1,57 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import http from 'http';
+import net from 'net';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+
+async function getAvailablePort(port: number): Promise<number> {
+  return new Promise((resolve) => {
+    const tester = net.createServer();
+
+    tester.once('error', () => {
+      resolve(getAvailablePort(port + 1));
+    });
+
+    tester.once('listening', () => {
+      tester.close(() => resolve(port));
+    });
+
+    tester.listen(port, '0.0.0.0');
+  });
+}
+
+function listenWithRetry(server: http.Server, port: number): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const tryListen = (candidate: number) => {
+      const handleError = (error: NodeJS.ErrnoException) => {
+        if (error.code === 'EADDRINUSE') {
+          const nextPort = candidate + 1;
+          console.warn(`[PDV Server] Port ${candidate} is busy. Trying ${nextPort} instead.`);
+          server.removeListener('error', handleError);
+          tryListen(nextPort);
+          return;
+        }
+
+        server.removeListener('error', handleError);
+        reject(error);
+      };
+
+      server.once('error', handleError);
+      server.listen(candidate, '0.0.0.0', () => {
+        server.removeListener('error', handleError);
+        resolve(candidate);
+      });
+    };
+
+    tryListen(port);
+  });
+}
 
 app.use(express.json());
 
@@ -1736,7 +1782,7 @@ async function startServer() {
   } else {
     const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { 
+      server: {
         middlewareMode: true,
         hmr: isHmrDisabled ? false : { server: httpServer },
       },
@@ -1745,9 +1791,14 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`[PDV Server] Running on http://0.0.0.0:${PORT}`);
-  });
+  const PORT = await listenWithRetry(httpServer, DEFAULT_PORT);
+
+  if (PORT !== DEFAULT_PORT) {
+    console.warn(`[PDV Server] Port ${DEFAULT_PORT} is busy. Using ${PORT} instead.`);
+  }
+
+  process.env.PORT = String(PORT);
+  console.log(`[PDV Server] Running on http://0.0.0.0:${PORT}`);
 }
 
 startServer().catch((err) => {

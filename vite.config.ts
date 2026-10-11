@@ -1,8 +1,11 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig} from 'vite';
-import {VitePWA} from 'vite-plugin-pwa';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(() => {
   return {
@@ -11,12 +14,18 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
+        includeAssets: [
+          'icon.svg',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'apple-touch-icon.png',
+        ],
         manifest: {
           id: '/',
           name: 'PDV Pro - Ponto de Venda Inteligente',
           short_name: 'PDV Pro',
-          description: 'Sistema de Ponto de Venda (PDV) responsivo e PWA para lojas físicas com resiliência offline, controle de caixa, emissão de comprovantes e sincronização automática.',
+          description:
+            'Sistema de Ponto de Venda (PDV) responsivo e PWA para lojas físicas com resiliência offline, controle de caixa, emissão de comprovantes e sincronização automática.',
           theme_color: '#0f172a',
           background_color: '#0f172a',
           display: 'standalone',
@@ -84,15 +93,13 @@ export default defineConfig(() => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': resolve(__dirname, 'src'),
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      host: 'localhost',
+      port: 3000,
+      strictPort: false,
     },
   };
 });

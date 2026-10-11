@@ -64,14 +64,9 @@ export default function App() {
 
   // User Authentication State
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    return localDB.getCurrentUser() || {
-      id: 'usr-2',
-      name: 'Carlos Silva',
-      username: 'carlos',
-      role: 'caixa',
-    };
+    return localDB.getCurrentUser();
   });
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(() => !localDB.getCurrentUser());
 
   // Cash Session State
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
@@ -419,11 +414,14 @@ export default function App() {
   // Auth Operations
   const handleLogin = async (username: string, pin: string) => {
     const user = await loginUser(username, pin);
+    localDB.setCurrentUser(user);
     setCurrentUser(user);
     setIsLoginModalOpen(false);
   };
 
   const handleLogout = () => {
+    localDB.setCurrentUser(null);
+    setCurrentUser(null);
     setIsLoginModalOpen(true);
   };
 

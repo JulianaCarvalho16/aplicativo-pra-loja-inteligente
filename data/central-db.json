@@ -1,0 +1,686 @@
+{
+  "users": [
+    {
+      "id": "usr-1",
+      "name": "Ana Gestora",
+      "username": "admin",
+      "role": "admin",
+      "pin": "1234"
+    },
+    {
+      "id": "usr-2",
+      "name": "Carlos Silva",
+      "username": "carlos",
+      "role": "caixa",
+      "pin": "1001"
+    },
+    {
+      "id": "usr-3",
+      "name": "Mariana Santos",
+      "username": "mariana",
+      "role": "vendedor",
+      "pin": "1002"
+    },
+    {
+      "id": "usr-4",
+      "name": "Lucas Oliveira",
+      "username": "lucas",
+      "role": "vendedor",
+      "pin": "1003"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-1",
+      "sku": "BEB-001",
+      "barcode": "7891000100011",
+      "name": "Café Espresso Gourmet 100ml",
+      "category": "Bebidas",
+      "type": "product",
+      "price": 7.5,
+      "costPrice": 2.2,
+      "stock": 119,
+      "unit": "un",
+      "imageUrl": "/src/assets/images/product_espresso_coffee_cup_1791696161770.jpg"
+    },
+    {
+      "id": "prod-2",
+      "sku": "BEB-002",
+      "barcode": "7891000100028",
+      "name": "Água Mineral Crystal 500ml",
+      "category": "Bebidas",
+      "type": "product",
+      "price": 4,
+      "costPrice": 1.1,
+      "stock": 85,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-3",
+      "sku": "BEB-003",
+      "barcode": "7891000100035",
+      "name": "Refrigerante Coca-Cola Lata 350ml",
+      "category": "Bebidas",
+      "type": "product",
+      "price": 6.5,
+      "costPrice": 3.2,
+      "stock": 64,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-4",
+      "sku": "ALM-001",
+      "barcode": "7891000100042",
+      "name": "Pão de Queijo Mineiro Tradicional",
+      "category": "Alimentos",
+      "type": "product",
+      "price": 5,
+      "costPrice": 1.8,
+      "stock": 45,
+      "unit": "un",
+      "imageUrl": "/src/assets/images/product_pao_de_queijo_1791696181604.jpg"
+    },
+    {
+      "id": "prod-5",
+      "sku": "ALM-002",
+      "barcode": "7891000100059",
+      "name": "Sanduíche Natural Peito de Peru",
+      "category": "Alimentos",
+      "type": "product",
+      "price": 14.9,
+      "costPrice": 6.5,
+      "stock": 28,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-6",
+      "sku": "ELE-001",
+      "barcode": "7891000100066",
+      "name": "Cabo USB-C Trançado 1.5m Reforçado",
+      "category": "Eletrônicos",
+      "type": "product",
+      "price": 29.9,
+      "costPrice": 10,
+      "stock": 35,
+      "unit": "un",
+      "imageUrl": "/src/assets/images/product_braided_usbc_cable_1791696171821.jpg"
+    },
+    {
+      "id": "prod-7",
+      "sku": "ELE-002",
+      "barcode": "7891000100073",
+      "name": "Carregador Turbo Rápido 30W Bivolt",
+      "category": "Eletrônicos",
+      "type": "product",
+      "price": 59.9,
+      "costPrice": 22,
+      "stock": 18,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-8",
+      "sku": "ELE-003",
+      "barcode": "7891000100080",
+      "name": "Fone Bluetooth TWS Estéreo Sem Fio",
+      "category": "Eletrônicos",
+      "type": "product",
+      "price": 119.9,
+      "costPrice": 48,
+      "stock": 14,
+      "unit": "un",
+      "imageUrl": "/src/assets/images/product_tws_bluetooth_headphones_1791696148666.jpg"
+    },
+    {
+      "id": "prod-9",
+      "sku": "ELE-004",
+      "barcode": "7891000100097",
+      "name": "Suporte Articulado Veicular para Celular",
+      "category": "Eletrônicos",
+      "type": "product",
+      "price": 34.9,
+      "costPrice": 12,
+      "stock": 22,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-10",
+      "sku": "MOD-001",
+      "barcode": "7891000100103",
+      "name": "Camiseta Algodão Egípcio Básica",
+      "category": "Vestuário",
+      "type": "product",
+      "price": 69.9,
+      "costPrice": 28,
+      "stock": 40,
+      "unit": "un",
+      "imageUrl": "/src/assets/images/product_cotton_tshirt_1791696190214.jpg"
+    },
+    {
+      "id": "prod-11",
+      "sku": "MOD-002",
+      "barcode": "7891000100110",
+      "name": "Meia Cano Curto Algodão (Kit 3 pares)",
+      "category": "Vestuário",
+      "type": "product",
+      "price": 24.9,
+      "costPrice": 9,
+      "stock": 50,
+      "unit": "kit",
+      "imageUrl": "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "prod-12",
+      "sku": "MOD-003",
+      "barcode": "7891000100127",
+      "name": "Bolsa Ecológica Ecobag Algodão Cru",
+      "category": "Utilidades",
+      "type": "product",
+      "price": 18,
+      "costPrice": 6,
+      "stock": 65,
+      "unit": "un",
+      "imageUrl": "https://images.unsplash.com/photo-1597484662317-9bd7bdda2907?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "serv-1",
+      "sku": "SRV-001",
+      "barcode": "9991000100018",
+      "name": "Aplicação de Película de Vidro",
+      "category": "Serviços",
+      "type": "service",
+      "price": 20,
+      "costPrice": 4,
+      "stock": 9999,
+      "unit": "serv",
+      "imageUrl": "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "serv-2",
+      "sku": "SRV-002",
+      "barcode": "9991000100025",
+      "name": "Higienização e Limpeza de Smartphone",
+      "category": "Serviços",
+      "type": "service",
+      "price": 35,
+      "costPrice": 5,
+      "stock": 9999,
+      "unit": "serv",
+      "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "serv-3",
+      "sku": "SRV-003",
+      "barcode": "9991000100032",
+      "name": "Formatação e Otimização Express",
+      "category": "Serviços",
+      "type": "service",
+      "price": 80,
+      "costPrice": 10,
+      "stock": 9999,
+      "unit": "serv",
+      "imageUrl": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+      "id": "serv-4",
+      "sku": "SRV-004",
+      "barcode": "9991000100049",
+      "name": "Embalagem Especial para Presente",
+      "category": "Serviços",
+      "type": "service",
+      "price": 12,
+      "costPrice": 3,
+      "stock": 9999,
+      "unit": "serv",
+      "imageUrl": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80"
+    }
+  ],
+  "sales": [
+    {
+      "id": "sale-init-1",
+      "saleNumber": "#100101",
+      "timestamp": "2026-10-11T08:30:00.000Z",
+      "sellerId": "usr-2",
+      "sellerName": "Carlos Silva",
+      "customerCpf": "142.983.471-20",
+      "customerIp": "192.168.1.15",
+      "items": [
+        {
+          "productId": "prod-1",
+          "name": "Café Espresso Gourmet 100ml",
+          "sku": "BEB-001",
+          "price": 7.5,
+          "quantity": 1,
+          "discount": 0,
+          "total": 7.5,
+          "type": "product"
+        },
+        {
+          "productId": "prod-4",
+          "name": "Pão de Queijo Mineiro Tradicional",
+          "sku": "ALM-001",
+          "price": 5,
+          "quantity": 2,
+          "discount": 0,
+          "total": 10,
+          "type": "product"
+        }
+      ],
+      "subtotal": 17.5,
+      "discount": 0,
+      "total": 17.5,
+      "paymentMethod": "dinheiro",
+      "paymentDetails": {
+        "receivedAmount": 20,
+        "changeAmount": 2.5
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-2",
+      "saleNumber": "#100102",
+      "timestamp": "2026-10-11T09:15:00.000Z",
+      "sellerId": "usr-3",
+      "sellerName": "Mariana Santos",
+      "customerCpf": "302.819.554-12",
+      "customerIp": "192.168.1.22",
+      "items": [
+        {
+          "productId": "prod-5",
+          "name": "Sanduíche Natural Peito de Peru",
+          "sku": "ALM-002",
+          "price": 14.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 14.9,
+          "type": "product"
+        },
+        {
+          "productId": "prod-6",
+          "name": "Cabo USB-C Trançado 1.5m Reforçado",
+          "sku": "ELE-001",
+          "price": 29.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 29.9,
+          "type": "product"
+        }
+      ],
+      "subtotal": 44.8,
+      "discount": 0,
+      "total": 44.8,
+      "paymentMethod": "pix",
+      "paymentDetails": {
+        "receivedAmount": 44.8,
+        "changeAmount": 0
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-3",
+      "saleNumber": "#100103",
+      "timestamp": "2026-10-11T10:25:00.000Z",
+      "sellerId": "usr-2",
+      "sellerName": "Carlos Silva",
+      "customerCpf": "582.471.930-88",
+      "customerIp": "192.168.1.18",
+      "items": [
+        {
+          "productId": "prod-7",
+          "name": "Carregador Turbo Rápido 30W Bivolt",
+          "sku": "ELE-002",
+          "price": 59.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 59.9,
+          "type": "product"
+        }
+      ],
+      "subtotal": 59.9,
+      "discount": 0,
+      "total": 59.9,
+      "paymentMethod": "cartao_debito",
+      "paymentDetails": {
+        "receivedAmount": 59.9,
+        "changeAmount": 0,
+        "cardBrand": "Mastercard"
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-4",
+      "saleNumber": "#100104",
+      "timestamp": "2026-10-11T11:40:00.000Z",
+      "sellerId": "usr-4",
+      "sellerName": "Lucas Oliveira",
+      "customerCpf": "219.840.123-45",
+      "customerIp": "192.168.1.30",
+      "items": [
+        {
+          "productId": "prod-8",
+          "name": "Fone Bluetooth TWS Estéreo Sem Fio",
+          "sku": "ELE-003",
+          "price": 119.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 119.9,
+          "type": "product"
+        }
+      ],
+      "subtotal": 119.9,
+      "discount": 0,
+      "total": 119.9,
+      "paymentMethod": "cartao_credito",
+      "paymentDetails": {
+        "receivedAmount": 119.9,
+        "changeAmount": 0,
+        "cardBrand": "Visa",
+        "cardInstallments": 3
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-5",
+      "saleNumber": "#100105",
+      "timestamp": "2026-10-11T13:10:00.000Z",
+      "sellerId": "usr-3",
+      "sellerName": "Mariana Santos",
+      "customerCpf": "719.284.103-09",
+      "customerIp": "192.168.1.14",
+      "items": [
+        {
+          "productId": "prod-10",
+          "name": "Camiseta Algodão Egípcio Básica",
+          "sku": "MOD-001",
+          "price": 69.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 69.9,
+          "type": "product"
+        },
+        {
+          "productId": "prod-11",
+          "name": "Meia Cano Curto Algodão (Kit 3 pares)",
+          "sku": "MOD-002",
+          "price": 24.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 24.9,
+          "type": "product"
+        }
+      ],
+      "subtotal": 94.8,
+      "discount": 5,
+      "total": 89.8,
+      "paymentMethod": "pix",
+      "paymentDetails": {
+        "receivedAmount": 89.8,
+        "changeAmount": 0
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-6",
+      "saleNumber": "#100106",
+      "timestamp": "2026-10-11T14:25:00.000Z",
+      "sellerId": "usr-2",
+      "sellerName": "Carlos Silva",
+      "customerCpf": "409.182.736-54",
+      "customerIp": "192.168.1.15",
+      "items": [
+        {
+          "productId": "prod-9",
+          "name": "Suporte Articulado Veicular para Celular",
+          "sku": "ELE-004",
+          "price": 34.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 34.9,
+          "type": "product"
+        },
+        {
+          "productId": "serv-1",
+          "name": "Aplicação de Película de Vidro",
+          "sku": "SRV-001",
+          "price": 20,
+          "quantity": 1,
+          "discount": 0,
+          "total": 20,
+          "type": "service"
+        }
+      ],
+      "subtotal": 54.9,
+      "discount": 0,
+      "total": 54.9,
+      "paymentMethod": "multiplo",
+      "paymentDetails": {
+        "receivedAmount": 54.9,
+        "changeAmount": 0,
+        "splits": [
+          {
+            "method": "dinheiro",
+            "amount": 20
+          },
+          {
+            "method": "cartao_credito",
+            "amount": 34.9
+          }
+        ]
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-7",
+      "saleNumber": "#100107",
+      "timestamp": "2026-10-11T15:45:00.000Z",
+      "sellerId": "usr-3",
+      "sellerName": "Mariana Santos",
+      "customerCpf": "628.190.432-11",
+      "customerIp": "192.168.1.26",
+      "items": [
+        {
+          "productId": "serv-2",
+          "name": "Higienização e Limpeza de Smartphone",
+          "sku": "SRV-002",
+          "price": 35,
+          "quantity": 1,
+          "discount": 0,
+          "total": 35,
+          "type": "service"
+        },
+        {
+          "productId": "prod-1",
+          "name": "Café Espresso Gourmet 100ml",
+          "sku": "BEB-001",
+          "price": 7.5,
+          "quantity": 2,
+          "discount": 0,
+          "total": 15,
+          "type": "product"
+        }
+      ],
+      "subtotal": 50,
+      "discount": 0,
+      "total": 50,
+      "paymentMethod": "pix",
+      "paymentDetails": {
+        "receivedAmount": 50,
+        "changeAmount": 0
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-8",
+      "saleNumber": "#100108",
+      "timestamp": "2026-10-11T17:15:00.000Z",
+      "sellerId": "usr-4",
+      "sellerName": "Lucas Oliveira",
+      "customerCpf": "831.294.019-33",
+      "customerIp": "192.168.1.42",
+      "items": [
+        {
+          "productId": "prod-10",
+          "name": "Camiseta Algodão Egípcio Básica",
+          "sku": "MOD-001",
+          "price": 69.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 69.9,
+          "type": "product"
+        },
+        {
+          "productId": "prod-7",
+          "name": "Carregador Turbo Rápido 30W Bivolt",
+          "sku": "ELE-002",
+          "price": 59.9,
+          "quantity": 1,
+          "discount": 0,
+          "total": 59.9,
+          "type": "product"
+        },
+        {
+          "productId": "serv-4",
+          "name": "Embalagem Especial para Presente",
+          "sku": "SRV-004",
+          "price": 12,
+          "quantity": 1,
+          "discount": 0,
+          "total": 12,
+          "type": "service"
+        }
+      ],
+      "subtotal": 141.8,
+      "discount": 0,
+      "total": 141.8,
+      "paymentMethod": "cartao_credito",
+      "paymentDetails": {
+        "receivedAmount": 141.8,
+        "changeAmount": 0,
+        "cardBrand": "Mastercard",
+        "cardInstallments": 2
+      },
+      "status": "completed"
+    },
+    {
+      "id": "sale-init-9",
+      "saleNumber": "#100109",
+      "timestamp": "2026-10-11T18:30:00.000Z",
+      "sellerId": "usr-2",
+      "sellerName": "Carlos Silva",
+      "customerCpf": "194.820.371-55",
+      "customerIp": "192.168.1.15",
+      "items": [
+        {
+          "productId": "prod-12",
+          "name": "Bolsa Ecológica Ecobag Algodão Cru",
+          "sku": "MOD-003",
+          "price": 18,
+          "quantity": 2,
+          "discount": 0,
+          "total": 36,
+          "type": "product"
+        },
+        {
+          "productId": "prod-3",
+          "name": "Refrigerante Coca-Cola Lata 350ml",
+          "sku": "BEB-003",
+          "price": 6.5,
+          "quantity": 1,
+          "discount": 0,
+          "total": 6.5,
+          "type": "product"
+        }
+      ],
+      "subtotal": 42.5,
+      "discount": 0,
+      "total": 42.5,
+      "paymentMethod": "dinheiro",
+      "paymentDetails": {
+        "receivedAmount": 50,
+        "changeAmount": 7.5
+      },
+      "status": "completed"
+    },
+    {
+      "sellerId": "usr-2",
+      "sellerName": "Carlos Silva",
+      "items": [
+        {
+          "productId": "prod-1",
+          "name": "Café Espresso Gourmet 100ml",
+          "sku": "BEB-001",
+          "price": 7.5,
+          "quantity": 1,
+          "discount": 0,
+          "total": 7.5,
+          "type": "product"
+        }
+      ],
+      "subtotal": 7.5,
+      "discount": 0,
+      "total": 7.5,
+      "paymentMethod": "pix",
+      "paymentDetails": {
+        "receivedAmount": 7.5,
+        "changeAmount": 0
+      },
+      "id": "sale-1791697485756",
+      "saleNumber": "#1010",
+      "timestamp": "2026-10-11T05:44:45.756Z",
+      "status": "completed"
+    }
+  ],
+  "cashSessions": [
+    {
+      "id": "sess-today",
+      "status": "open",
+      "openedAt": "2026-10-11T04:15:55.709Z",
+      "openedBy": "usr-2",
+      "openedByName": "Carlos Silva",
+      "initialAmount": 150,
+      "movements": []
+    }
+  ],
+  "onlineOrders": [
+    {
+      "id": "ord-101",
+      "orderNumber": "ONL-8421",
+      "customerName": "Beatriz Lima",
+      "customerEmail": "beatriz.lima@email.com",
+      "customerPhone": "(11) 98765-4321",
+      "customerCpf": "123.456.789-00",
+      "deliveryType": "pickup",
+      "items": [
+        {
+          "productId": "prod-8",
+          "name": "Fone Bluetooth TWS Estéreo Sem Fio",
+          "sku": "ELE-003",
+          "price": 119.9,
+          "quantity": 1,
+          "total": 119.9
+        },
+        {
+          "productId": "prod-6",
+          "name": "Cabo USB-C Trançado 1.5m Reforçado",
+          "sku": "ELE-001",
+          "price": 29.9,
+          "quantity": 1,
+          "total": 29.9
+        }
+      ],
+      "subtotal": 149.8,
+      "shippingFee": 0,
+      "total": 149.8,
+      "paymentMethod": "pix",
+      "paymentStatus": "paid",
+      "orderStatus": "delivered",
+      "createdAt": "2026-10-11T04:09:50.692Z",
+      "notes": "Cliente optou por Retirar na Loja Física (Balcão PDV)"
+    }
+  ],
+  "lastBackupTimestamp": "2026-10-11T05:29:54.765Z"
+}

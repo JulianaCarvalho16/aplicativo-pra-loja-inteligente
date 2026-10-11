@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Background with safe zone -->
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#grad)" opacity="0.12"/>
+  
+  <!-- POS Register / Shield icon -->
+  <g transform="translate(96, 96)" filter="url(#shadow)">
+    <!-- Base Monitor -->
+    <rect x="20" y="24" width="280" height="190" rx="20" fill="#1e293b" stroke="#38bdf8" stroke-width="8"/>
+    <!-- Screen Screen -->
+    <rect x="40" y="44" width="240" height="150" rx="10" fill="#0f172a"/>
+    <!-- Screen Header -->
+    <rect x="56" y="60" width="120" height="16" rx="4" fill="#38bdf8"/>
+    <!-- Cart / Sale lines on screen -->
+    <rect x="56" y="90" width="160" height="10" rx="3" fill="#64748b"/>
+    <rect x="56" y="110" width="130" height="10" rx="3" fill="#64748b"/>
+    <!-- Total Highlight -->
+    <rect x="56" y="136" width="208" height="38" rx="6" fill="#10b981" opacity="0.25"/>
+    <text x="70" y="162" fill="#34d399" font-family="monospace" font-size="22" font-weight="bold">R$ 149,90</text>
+    
+    <!-- Stand -->
+    <path d="M 120 214 L 200 214 L 215 260 L 105 260 Z" fill="#334155"/>
+    <!-- Base -->
+    <rect x="70" y="260" width="180" height="18" rx="9" fill="#1e293b" stroke="#475569" stroke-width="4"/>
+    
+    <!-- Receipt Printer Paper Roll out -->
+    <path d="M 220 214 Q 250 180 280 214 L 275 250 L 225 240 Z" fill="#f8fafc" opacity="0.9"/>
+  </g>
+</svg>

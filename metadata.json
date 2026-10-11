@@ -1,0 +1,6 @@
+{
+  "name": "PDV Pro - Ponto de Venda Inteligente",
+  "description": "Sistema de Ponto de Venda (PDV) responsivo e PWA para lojas físicas com resiliência offline, controle de caixa, emissão de comprovantes e sincronização automática.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

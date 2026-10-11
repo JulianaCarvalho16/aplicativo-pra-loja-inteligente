@@ -637,8 +637,23 @@
   "cashSessions": [
     {
       "id": "sess-today",
-      "status": "open",
+      "status": "closed",
       "openedAt": "2026-10-11T04:15:55.709Z",
+      "openedBy": "usr-2",
+      "openedByName": "Carlos Silva",
+      "initialAmount": 150,
+      "movements": [],
+      "closedAt": "2026-10-11T15:28:11.957Z",
+      "actualAmount": 150,
+      "closingNotes": "Fechamento conferido e validado",
+      "closedBy": "usr-2",
+      "closedByName": "Carlos Silva",
+      "validatedByAdmin": "Ana Gestora"
+    },
+    {
+      "id": "sess-1791732495605",
+      "status": "open",
+      "openedAt": "2026-10-11T15:28:15.605Z",
       "openedBy": "usr-2",
       "openedByName": "Carlos Silva",
       "initialAmount": 150,
@@ -682,5 +697,5 @@
       "notes": "Cliente optou por Retirar na Loja Física (Balcão PDV)"
     }
   ],
-  "lastBackupTimestamp": "2026-10-11T05:29:54.765Z"
+  "lastBackupTimestamp": "2026-10-11T15:28:11.957Z"
 }

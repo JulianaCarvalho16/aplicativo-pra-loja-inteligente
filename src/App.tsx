@@ -19,6 +19,8 @@ import { OnlineStoreView } from './components/OnlineStoreView';
 import { OnlineOrdersOmnichannelModal } from './components/OnlineOrdersOmnichannelModal';
 import { CloudBackupModal } from './components/CloudBackupModal';
 import { DashboardModal } from './components/DashboardModal';
+import { ProductManagementModal } from './components/ProductManagementModal';
+import { CustomerHistoryModal } from './components/CustomerHistoryModal';
 
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -104,6 +106,9 @@ export default function App() {
   const [isOnlineOrdersModalOpen, setIsOnlineOrdersModalOpen] = useState(false);
   const [isCloudBackupModalOpen, setIsCloudBackupModalOpen] = useState(false);
   const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
+  const [isProductManagementModalOpen, setIsProductManagementModalOpen] = useState(false);
+  const [isCustomerHistoryModalOpen, setIsCustomerHistoryModalOpen] = useState(false);
+  const [customerHistoryQuery, setCustomerHistoryQuery] = useState('');
 
   // Last Completed Sale for Receipt Printing
   const [lastSale, setLastSale] = useState<Sale | null>(null);
@@ -185,6 +190,11 @@ export default function App() {
     setIsCustomerModalOpen(true);
   }, []);
 
+  const handleOpenCustomerHistory = useCallback((query?: string) => {
+    setCustomerHistoryQuery(query || customerCpf || customerName || '');
+    setIsCustomerHistoryModalOpen(true);
+  }, [customerCpf, customerName]);
+
   const handleOpenCashModal = useCallback(() => {
     setIsCashModalOpen(true);
   }, []);
@@ -205,15 +215,18 @@ export default function App() {
     setIsCashModalOpen(false);
     setIsSyncQueueModalOpen(false);
     setIsCustomerModalOpen(false);
+    setIsCustomerHistoryModalOpen(false);
     setIsShortcutsModalOpen(false);
     setIsOnlineOrdersModalOpen(false);
     setIsCloudBackupModalOpen(false);
     setIsDashboardModalOpen(false);
+    setIsProductManagementModalOpen(false);
   }, []);
 
   useKeyboardShortcuts({
     onSearchFocus: handleFocusSearch,
     onCustomerModal: handleOpenCustomerModal,
+    onCustomerHistory: () => handleOpenCustomerHistory(),
     onCashMovement: handleOpenCashModal,
     onCashSummary: handleOpenCashSummary,
     onDashboard: () => setIsDashboardModalOpen(true),
@@ -346,17 +359,42 @@ export default function App() {
   const handleRecordMovement = async (
     type: 'sangria' | 'suprimento',
     amount: number,
-    reason: string
+    reason: string,
+    adminValidation?: { adminPin: string; adminUsername?: string }
   ) => {
     if (!currentUser) return;
-    await recordCashMovement(type, amount, reason, currentUser);
+    await recordCashMovement(type, amount, reason, currentUser, adminValidation);
     const updated = await fetchCurrentCashSession();
     setCashSession(updated);
   };
 
-  const handleCloseCash = async (actualAmount: number, closingNotes: string) => {
-    await closeCashSession(actualAmount, closingNotes);
+  const handleCloseCash = async (
+    actualAmount: number,
+    closingNotes: string,
+    adminValidation: { adminPin: string; adminUsername?: string }
+  ) => {
+    await closeCashSession(actualAmount, closingNotes, {
+      adminPin: adminValidation.adminPin,
+      adminUsername: adminValidation.adminUsername,
+      user: currentUser,
+    });
     setCashSession(null);
+  };
+
+  // Product Management Callbacks (Admin Protected)
+  const handleProductCreated = (newProduct: Product) => {
+    setProducts((prev) => [...prev, newProduct]);
+  };
+
+  const handleProductUpdated = (updatedProduct: Product) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+    );
+  };
+
+  const handleProductDeleted = (deletedId: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+    setCartItems((prev) => prev.filter((item) => item.product.id !== deletedId));
   };
 
   // Sync Queue Manual Trigger
@@ -430,6 +468,8 @@ export default function App() {
             onOpenOnlineOrders={() => setIsOnlineOrdersModalOpen(true)}
             onOpenCloudBackup={() => setIsCloudBackupModalOpen(true)}
             onOpenDashboard={() => setIsDashboardModalOpen(true)}
+            onOpenProductManagement={() => setIsProductManagementModalOpen(true)}
+            onOpenCustomerHistory={() => handleOpenCustomerHistory()}
             onFocusSearch={handleFocusSearch}
             onLogout={handleLogout}
           />
@@ -498,6 +538,8 @@ export default function App() {
                 products={products}
                 onAddToCart={handleAddToCart}
                 searchRef={searchInputRef}
+                onOpenProductManagement={() => setIsProductManagementModalOpen(true)}
+                currentUser={currentUser}
               />
             </section>
 
@@ -518,6 +560,7 @@ export default function App() {
                 onRemoveItem={handleRemoveItem}
                 onClearCart={handleClearCart}
                 onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+                onOpenCustomerHistory={handleOpenCustomerHistory}
                 onSetDiscount={setDiscount}
                 onCheckout={() => setIsCheckoutModalOpen(true)}
               />
@@ -584,6 +627,22 @@ export default function App() {
           setCustomerCpf('');
           setCustomerName('');
         }}
+        onOpenCustomerHistory={handleOpenCustomerHistory}
+      />
+
+      <CustomerHistoryModal
+        isOpen={isCustomerHistoryModalOpen}
+        onClose={() => setIsCustomerHistoryModalOpen(false)}
+        initialCustomerQuery={customerHistoryQuery}
+        onSelectCustomerForCart={(cpf, name) => {
+          setCustomerCpf(cpf);
+          setCustomerName(name);
+        }}
+        onAddToCart={(productId) => {
+          const prod = products.find((p) => p.id === productId);
+          if (prod) handleAddToCart(prod);
+        }}
+        availableProducts={products}
       />
 
       <ShortcutsModal
@@ -612,6 +671,16 @@ export default function App() {
         onClose={() => setIsDashboardModalOpen(false)}
         sales={sales}
         onlineOrders={onlineOrders}
+      />
+
+      <ProductManagementModal
+        isOpen={isProductManagementModalOpen}
+        onClose={() => setIsProductManagementModalOpen(false)}
+        products={products}
+        currentUser={currentUser}
+        onProductCreated={handleProductCreated}
+        onProductUpdated={handleProductUpdated}
+        onProductDeleted={handleProductDeleted}
       />
 
       <LoginModal

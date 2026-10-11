@@ -1,4 +1,4 @@
-import { Product, Sale, CashSession, CashMovement, User, OnlineOrder, CloudBackupSnapshot } from '../types';
+import { Product, Sale, CashSession, CashMovement, User, OnlineOrder, CloudBackupSnapshot, Customer, CustomerHistory } from '../types';
 import { localDB, OfflineSaleItem } from './db';
 
 const API_BASE = '/api';
@@ -73,6 +73,169 @@ export async function fetchProducts(): Promise<Product[]> {
     console.warn('Utilizando catálogo local de produtos (modo offline):', err);
     const cached = await localDB.getProducts();
     return cached;
+  }
+}
+
+export async function createProduct(
+  productData: Partial<Product>,
+  adminAuth?: { adminPin?: string; user?: User | null }
+): Promise<Product> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (adminAuth?.adminPin) {
+    headers['x-admin-pin'] = adminAuth.adminPin;
+  }
+  if (adminAuth?.user?.id) {
+    headers['x-user-id'] = adminAuth.user.id;
+  }
+  if (adminAuth?.user?.role) {
+    headers['x-user-role'] = adminAuth.user.role;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/products`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...productData,
+        adminPin: adminAuth?.adminPin,
+        userId: adminAuth?.user?.id,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Falha ao cadastrar item');
+    }
+
+    const data = await res.json();
+    const created = data.product || data;
+    const currentProds = await localDB.getProducts();
+    await localDB.saveProducts([...currentProds, created]);
+    return created;
+  } catch (err: unknown) {
+    // Offline simulation check for admin permission
+    const isAdmin = adminAuth?.user?.role === 'admin' || adminAuth?.adminPin === '1234';
+    if (!isAdmin) {
+      throw new Error('Acesso negado: Somente administradores têm permissão para cadastrar itens.');
+    }
+
+    const fallbackProduct: Product = {
+      id: `prod-local-${Date.now()}`,
+      sku: productData.sku || `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
+      barcode: productData.barcode || `${Date.now()}`,
+      name: productData.name || 'Novo Item',
+      category: productData.category || 'Geral',
+      type: productData.type || 'product',
+      price: Number(productData.price) || 0,
+      costPrice: Number(productData.costPrice) || 0,
+      stock: productData.type === 'service' ? 9999 : Number(productData.stock) || 0,
+      unit: productData.unit || 'un',
+      imageUrl: productData.imageUrl,
+    };
+
+    const currentProds = await localDB.getProducts();
+    await localDB.saveProducts([...currentProds, fallbackProduct]);
+    return fallbackProduct;
+  }
+}
+
+export async function updateProduct(
+  id: string,
+  productData: Partial<Product>,
+  adminAuth?: { adminPin?: string; user?: User | null }
+): Promise<Product> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (adminAuth?.adminPin) {
+    headers['x-admin-pin'] = adminAuth.adminPin;
+  }
+  if (adminAuth?.user?.id) {
+    headers['x-user-id'] = adminAuth.user.id;
+  }
+  if (adminAuth?.user?.role) {
+    headers['x-user-role'] = adminAuth.user.role;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/products/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        ...productData,
+        adminPin: adminAuth?.adminPin,
+        userId: adminAuth?.user?.id,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Falha ao atualizar item');
+    }
+
+    const data = await res.json();
+    const updated = data.product;
+    const currentProds = await localDB.getProducts();
+    const newProds = currentProds.map((p) => (p.id === id ? updated : p));
+    await localDB.saveProducts(newProds);
+    return updated;
+  } catch (err: unknown) {
+    const isAdmin = adminAuth?.user?.role === 'admin' || adminAuth?.adminPin === '1234';
+    if (!isAdmin) {
+      throw new Error('Acesso negado: Somente administradores têm permissão para editar itens.');
+    }
+
+    const currentProds = await localDB.getProducts();
+    const found = currentProds.find((p) => p.id === id);
+    if (!found) throw new Error('Item não encontrado');
+
+    const updated: Product = { ...found, ...productData };
+    const newProds = currentProds.map((p) => (p.id === id ? updated : p));
+    await localDB.saveProducts(newProds);
+    return updated;
+  }
+}
+
+export async function deleteProduct(
+  id: string,
+  adminAuth?: { adminPin?: string; user?: User | null }
+): Promise<void> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (adminAuth?.adminPin) {
+    headers['x-admin-pin'] = adminAuth.adminPin;
+  }
+  if (adminAuth?.user?.id) {
+    headers['x-user-id'] = adminAuth.user.id;
+  }
+  if (adminAuth?.user?.role) {
+    headers['x-user-role'] = adminAuth.user.role;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/products/${id}`, {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({
+        adminPin: adminAuth?.adminPin,
+        userId: adminAuth?.user?.id,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Falha ao remover item');
+    }
+
+    const currentProds = await localDB.getProducts();
+    const newProds = currentProds.filter((p) => p.id !== id);
+    await localDB.saveProducts(newProds);
+  } catch (err: unknown) {
+    const isAdmin = adminAuth?.user?.role === 'admin' || adminAuth?.adminPin === '1234';
+    if (!isAdmin) {
+      throw new Error('Acesso negado: Somente administradores têm permissão para remover itens.');
+    }
+
+    const currentProds = await localDB.getProducts();
+    const newProds = currentProds.filter((p) => p.id !== id);
+    await localDB.saveProducts(newProds);
   }
 }
 
@@ -225,7 +388,8 @@ export async function recordCashMovement(
   type: 'sangria' | 'suprimento',
   amount: number,
   reason: string,
-  user: User
+  user: User,
+  adminValidation?: { adminPin: string; adminUsername?: string }
 ): Promise<CashMovement> {
   try {
     const res = await fetch(`${API_BASE}/cash-register/movement`, {
@@ -237,6 +401,8 @@ export async function recordCashMovement(
         reason,
         operatorId: user.id,
         operatorName: user.name,
+        adminPin: adminValidation?.adminPin,
+        adminUsername: adminValidation?.adminUsername,
       }),
     });
 
@@ -251,6 +417,9 @@ export async function recordCashMovement(
     }
     return data.movement;
   } catch (err) {
+    if (type === 'sangria' && (!adminValidation?.adminPin || adminValidation.adminPin !== '1234')) {
+      throw new Error(err instanceof Error ? err.message : 'PIN de administrador incorreto ou não informado.');
+    }
     const current = localDB.getCashSession();
     const movement: CashMovement = {
       id: `mov-offline-${Date.now()}`,
@@ -267,17 +436,38 @@ export async function recordCashMovement(
       current.movements.push(movement);
       localDB.setCashSession(current);
     }
-
     return movement;
   }
 }
 
-export async function closeCashSession(actualAmount: number, closingNotes?: string): Promise<CashSession> {
+export async function closeCashSession(
+  actualAmount: number,
+  closingNotes?: string,
+  adminValidation?: { adminPin?: string; adminUsername?: string; user?: User | null }
+): Promise<CashSession> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (adminValidation?.adminPin) {
+    headers['x-admin-pin'] = adminValidation.adminPin;
+  }
+  if (adminValidation?.user?.id) {
+    headers['x-user-id'] = adminValidation.user.id;
+  }
+  if (adminValidation?.user?.role) {
+    headers['x-user-role'] = adminValidation.user.role;
+  }
+
   try {
     const res = await fetch(`${API_BASE}/cash-register/close`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ actualAmount, closingNotes }),
+      headers,
+      body: JSON.stringify({
+        actualAmount,
+        closingNotes,
+        closedBy: adminValidation?.user?.id,
+        closedByName: adminValidation?.user?.name,
+        adminPin: adminValidation?.adminPin,
+        adminUsername: adminValidation?.adminUsername,
+      }),
     });
 
     if (!res.ok) {
@@ -288,13 +478,26 @@ export async function closeCashSession(actualAmount: number, closingNotes?: stri
     const data = await res.json();
     localDB.setCashSession(null);
     return data.session;
-  } catch {
+  } catch (err: unknown) {
+    // Offline verification: verify admin PIN or admin user
+    const isAdmin =
+      adminValidation?.user?.role === 'admin' ||
+      adminValidation?.adminPin === '1234';
+
+    if (!isAdmin) {
+      const msg = err instanceof Error ? err.message : 'Validação de administrador obrigatória para fechar o caixa.';
+      throw new Error(msg);
+    }
+
     const current = localDB.getCashSession();
     if (current) {
       current.status = 'closed';
       current.closedAt = new Date().toISOString();
       current.actualAmount = actualAmount;
       current.closingNotes = closingNotes;
+      current.closedBy = adminValidation?.user?.id || current.openedBy;
+      current.closedByName = adminValidation?.user?.name || current.openedByName;
+      current.validatedByAdmin = 'Ana Gestora (Admin Offline)';
       localDB.setCashSession(null);
       return current;
     }
@@ -317,6 +520,119 @@ export async function fetchOnlineOrders(): Promise<OnlineOrder[]> {
     console.warn('Utilizando pedidos online em cache local:', err);
     return localDB.getOnlineOrders();
   }
+}
+
+// ==========================================
+// ONLINE CUSTOMER & PHYSICAL STORE DOSSIER APIS
+// ==========================================
+
+export async function registerOnlineCustomer(customerData: {
+  name: string;
+  email: string;
+  phone: string;
+  cpf?: string;
+  password: string;
+  address?: string;
+}): Promise<{ success: boolean; customer: Customer; token: string; message: string }> {
+  const res = await fetch(`${API_BASE}/online/customers/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(customerData),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Falha ao cadastrar cliente na loja online.');
+  }
+
+  return res.json();
+}
+
+export async function loginOnlineCustomer(data: {
+  emailOrCpf: string;
+  password: string;
+}): Promise<{ success: boolean; customer: Customer; token: string; message: string }> {
+  const res = await fetch(`${API_BASE}/online/customers/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Credenciais inválidas. Verifique os dados informados.');
+  }
+
+  return res.json();
+}
+
+export async function fetchCurrentOnlineCustomer(customerId: string): Promise<{ customer: Customer }> {
+  const res = await fetch(`${API_BASE}/online/customers/me?customerId=${encodeURIComponent(customerId)}`, {
+    headers: { 'x-customer-id': customerId },
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Falha ao buscar sessão do cliente.');
+  }
+
+  return res.json();
+}
+
+export async function fetchOnlineCustomerOrders(customerId: string): Promise<OnlineOrder[]> {
+  const res = await fetch(`${API_BASE}/online/customers/${encodeURIComponent(customerId)}/orders`);
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+export async function fetchCustomers(search?: string): Promise<Customer[]> {
+  try {
+    const url = search ? `${API_BASE}/customers?search=${encodeURIComponent(search)}` : `${API_BASE}/customers`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Falha ao buscar clientes cadastrados');
+    return res.json();
+  } catch (err) {
+    console.warn('Erro ao buscar clientes no servidor:', err);
+    return [];
+  }
+}
+
+export async function createOrUpdateCustomer(customerData: Partial<Customer>): Promise<{ success: boolean; customer: Customer }> {
+  const res = await fetch(`${API_BASE}/customers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(customerData),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Falha ao cadastrar/atualizar dados do cliente.');
+  }
+
+  return res.json();
+}
+
+export async function fetchCustomerHistory(params: {
+  customerId?: string;
+  cpf?: string;
+  phone?: string;
+  query?: string;
+}): Promise<CustomerHistory> {
+  const q = new URLSearchParams();
+  if (params.customerId) q.set('customerId', params.customerId);
+  if (params.cpf) q.set('cpf', params.cpf);
+  if (params.phone) q.set('phone', params.phone);
+  if (params.query) q.set('query', params.query);
+
+  const res = await fetch(`${API_BASE}/customers/history?${q.toString()}`);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Falha ao buscar histórico de compras e serviços do cliente.');
+  }
+
+  return res.json();
 }
 
 export async function createOnlineOrder(orderData: Partial<OnlineOrder> & { items: any[] }): Promise<{ success: boolean; order: OnlineOrder }> {

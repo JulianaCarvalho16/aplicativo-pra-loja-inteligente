@@ -22,6 +22,19 @@ export function formatDateTime(isoString: string): string {
   }
 }
 
+export function formatDate(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(d);
+  } catch {
+    return isoString;
+  }
+}
+
 export function formatTimeOnly(isoString: string): string {
   try {
     const d = new Date(isoString);

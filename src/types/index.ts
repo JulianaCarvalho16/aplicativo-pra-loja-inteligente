@@ -59,6 +59,7 @@ export interface Sale {
   timestamp: string;
   sellerId: string;
   sellerName: string;
+  customerId?: string;
   customerCpf?: string;
   customerIp?: string;
   customerName?: string;
@@ -95,6 +96,9 @@ export interface CashSession {
   movements: CashMovement[];
   closingNotes?: string;
   actualAmount?: number;
+  closedBy?: string;
+  closedByName?: string;
+  validatedByAdmin?: string;
 }
 
 export type DeliveryType = 'pickup' | 'delivery';
@@ -112,6 +116,7 @@ export interface OnlineOrderItem {
 export interface OnlineOrder {
   id: string;
   orderNumber: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -127,6 +132,69 @@ export interface OnlineOrder {
   orderStatus: OrderStatus;
   createdAt: string;
   notes?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cpf?: string;
+  address?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface CustomerHistoryItem {
+  id: string;
+  transactionId: string;
+  transactionNumber: string;
+  date: string;
+  type: 'product' | 'service';
+  productId: string;
+  name: string;
+  sku: string;
+  price: number;
+  unitPrice?: number;
+  quantity: number;
+  discount: number;
+  total: number;
+  sellerName?: string;
+  paymentMethod?: string;
+  origin: 'pos' | 'online';
+  status?: string;
+}
+
+export interface CustomerHistoryTransaction {
+  id: string;
+  number: string;
+  date: string;
+  origin: 'pos' | 'online';
+  total: number;
+  itemsCount: number;
+  sellerName?: string;
+  paymentMethod?: string;
+  status: string;
+}
+
+export interface CustomerHistory {
+  customer: Customer;
+  totalSpent: number;
+  totalTransactions: number;
+  totalItemsPurchased: number;
+  totalServicesUsed: number;
+  firstVisit?: string;
+  lastVisit?: string;
+  items: CustomerHistoryItem[];
+  transactions: CustomerHistoryTransaction[];
+  metrics?: {
+    totalSpent: number;
+    totalTransactions: number;
+    totalItemsPurchased: number;
+    totalServicesUsed: number;
+    firstVisitDate?: string;
+    lastVisitDate?: string;
+  };
 }
 
 export interface CloudBackupSnapshot {

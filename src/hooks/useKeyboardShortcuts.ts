@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 interface ShortcutHandlers {
   onSearchFocus?: () => void;
   onCustomerModal?: () => void;
+  onCustomerHistory?: () => void;
   onCashMovement?: () => void;
   onCashSummary?: () => void;
   onDashboard?: () => void;
@@ -23,6 +24,9 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       } else if (e.key === 'F4') {
         e.preventDefault();
         handlers.onCashMovement?.();
+      } else if (e.key === 'F6') {
+        e.preventDefault();
+        handlers.onCustomerHistory?.();
       } else if (e.key === 'F7') {
         e.preventDefault();
         handlers.onCashSummary?.();

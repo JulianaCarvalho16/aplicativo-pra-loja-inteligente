@@ -10,7 +10,8 @@ import {
   CreditCard, 
   UserPlus, 
   Percent,
-  Package 
+  Package,
+  History
 } from 'lucide-react';
 import { CartItem, User } from '../types';
 import { formatCurrency } from '../utils/formatters';
@@ -26,6 +27,7 @@ interface CartProps {
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onOpenCustomerModal: () => void;
+  onOpenCustomerHistory?: (query?: string) => void;
   onSetDiscount: (discount: number) => void;
   onCheckout: () => void;
 }
@@ -41,6 +43,7 @@ export const Cart: React.FC<CartProps> = ({
   onRemoveItem,
   onClearCart,
   onOpenCustomerModal,
+  onOpenCustomerHistory,
   onSetDiscount,
   onCheckout,
 }) => {
@@ -90,23 +93,39 @@ export const Cart: React.FC<CartProps> = ({
           </span>
         </div>
 
-        {/* Customer Identification (CPF / IP) */}
+        {/* Customer Identification (CPF / Name / History) */}
         <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/60">
-          <button
-            onClick={onOpenCustomerModal}
-            className="flex items-center gap-1 text-slate-300 hover:text-emerald-400 transition"
-          >
-            <UserPlus className="w-3.5 h-3.5 text-slate-400" />
-            <span>CPF:</span>
-            <span className="font-mono text-emerald-400 font-semibold">
-              {customerCpf ? customerCpf : 'Não informado (F3)'}
-            </span>
-          </button>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <button
+              onClick={onOpenCustomerModal}
+              className="flex items-center gap-1 text-slate-300 hover:text-emerald-400 transition truncate"
+              title="Clique para vincular ou alterar CPF e dados do cliente"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="shrink-0">{customerName ? customerName : 'Cliente'}:</span>
+              <span className="font-mono text-emerald-400 font-semibold truncate">
+                {customerCpf ? customerCpf : 'Não informado (F3)'}
+              </span>
+            </button>
+          </div>
 
-          {/* Client IP Link */}
-          <div className="flex items-center gap-1 text-[11px] text-slate-400 font-mono" title="IP do terminal do cliente">
-            <Globe className="w-3 h-3 text-sky-400" />
-            <span>{clientIp || '127.0.0.1'}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {onOpenCustomerHistory && (
+              <button
+                onClick={() => onOpenCustomerHistory(customerCpf || customerName)}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/80 text-[11px] font-bold transition"
+                title="Consultar o que este cliente já comprou ou utilizou na loja (F8)"
+              >
+                <History className="w-3 h-3 text-emerald-400" />
+                <span>Histórico</span>
+              </button>
+            )}
+
+            {/* Client IP Link */}
+            <div className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 font-mono" title="IP do terminal do cliente">
+              <Globe className="w-3 h-3 text-sky-400" />
+              <span>{clientIp || '127.0.0.1'}</span>
+            </div>
           </div>
         </div>
       </div>

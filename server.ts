@@ -55,6 +55,7 @@ interface Sale {
   timestamp: string;
   sellerId: string;
   sellerName: string;
+  customerId?: string;
   customerCpf?: string;
   customerIp?: string;
   customerName?: string;
@@ -98,6 +99,9 @@ interface CashSession {
   movements: CashMovement[];
   closingNotes?: string;
   actualAmount?: number;
+  closedBy?: string;
+  closedByName?: string;
+  validatedByAdmin?: string;
 }
 
 interface OnlineOrderItem {
@@ -112,6 +116,7 @@ interface OnlineOrderItem {
 interface OnlineOrder {
   id: string;
   orderNumber: string;
+  customerId?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -129,12 +134,25 @@ interface OnlineOrder {
   notes?: string;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cpf: string;
+  password?: string;
+  address?: string;
+  notes?: string;
+  createdAt: string;
+}
+
 interface DatabaseSchema {
   users: User[];
   products: Product[];
   sales: Sale[];
   cashSessions: CashSession[];
   onlineOrders: OnlineOrder[];
+  customers: Customer[];
   lastBackupTimestamp?: string;
 }
 
@@ -143,6 +161,75 @@ const DEFAULT_USERS: User[] = [
   { id: 'usr-2', name: 'Carlos Silva', username: 'carlos', role: 'caixa', pin: '1001' },
   { id: 'usr-3', name: 'Mariana Santos', username: 'mariana', role: 'vendedor', pin: '1002' },
   { id: 'usr-4', name: 'Lucas Oliveira', username: 'lucas', role: 'vendedor', pin: '1003' },
+];
+
+const DEFAULT_CUSTOMERS: Customer[] = [
+  {
+    id: 'cust-1',
+    name: 'Beatriz Lima',
+    email: 'beatriz.lima@email.com',
+    phone: '(11) 98765-4321',
+    cpf: '123.456.789-00',
+    password: '123456',
+    address: 'Av. Paulista, 1000, Apto 42 - Bela Vista, São Paulo - SP',
+    notes: 'Cliente VIP • Compra frequente pelo e-commerce e retira no balcão',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+  },
+  {
+    id: 'cust-2',
+    name: 'Marcos Fernandes',
+    email: 'marcos.fernandes@email.com',
+    phone: '(11) 95345-6789',
+    cpf: '409.182.736-54',
+    password: '123456',
+    address: 'Rua Vergueiro, 890 - Paraíso, São Paulo - SP',
+    notes: 'Cliente de serviços técnicos e acessórios veiculares',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
+  },
+  {
+    id: 'cust-3',
+    name: 'Juliana Costa',
+    email: 'juliana.costa@email.com',
+    phone: '(11) 94456-7890',
+    cpf: '628.190.432-11',
+    password: '123456',
+    address: 'Alameda Santos, 200 - Cerqueira César, São Paulo - SP',
+    notes: 'Costuma solicitar higienização e manutenção preventiva de smartphone',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
+  },
+  {
+    id: 'cust-4',
+    name: 'Carlos Mendes',
+    email: 'carlos.mendes@email.com',
+    phone: '(11) 97123-4567',
+    cpf: '142.983.471-20',
+    password: '123456',
+    address: 'Rua das Flores, 120 - Jardins, São Paulo - SP',
+    notes: 'Consumidor matinal frequente de café espresso gourmet',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString(),
+  },
+  {
+    id: 'cust-5',
+    name: 'Mariana Souza',
+    email: 'mariana.souza@email.com',
+    phone: '(11) 96234-5678',
+    cpf: '302.819.554-12',
+    password: '123456',
+    address: 'Rua Augusta, 450 - Consolação, São Paulo - SP',
+    notes: 'Adquire periféricos e cabos reforçados para o trabalho',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+  },
+  {
+    id: 'cust-6',
+    name: 'Lucas Ribeiro',
+    email: 'lucas.ribeiro@email.com',
+    phone: '(11) 93567-8901',
+    cpf: '831.294.019-33',
+    password: '123456',
+    address: 'Rua Oscar Freire, 310 - Pinheiros, São Paulo - SP',
+    notes: 'Utilizou serviço de embalagem especial para presente e vestuário premium',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+  },
 ];
 
 const DEFAULT_PRODUCTS: Product[] = [
@@ -403,6 +490,10 @@ function initDb(): DatabaseSchema {
         ];
         updatedImages = true;
       }
+      if (!data.customers || data.customers.length === 0) {
+        data.customers = DEFAULT_CUSTOMERS;
+        updatedImages = true;
+      }
       if (!data.sales || data.sales.length === 0) {
         data.sales = DEFAULT_SALES;
         updatedImages = true;
@@ -428,6 +519,7 @@ function initDb(): DatabaseSchema {
     users: DEFAULT_USERS,
     products: DEFAULT_PRODUCTS,
     sales: DEFAULT_SALES,
+    customers: DEFAULT_CUSTOMERS,
     cashSessions: [
       {
         id: 'sess-today',
@@ -534,33 +626,166 @@ app.get('/api/users', (_req: Request, res: Response) => {
   res.json(db.users.map(({ pin, ...safeUser }) => safeUser));
 });
 
+// Helper to verify if an action is authorized by an Administrator
+function verifyAdminAuthorization(req: Request): { authorized: boolean; adminUser?: User; error?: string } {
+  const adminPinHeader = (req.headers['x-admin-pin'] as string | undefined)?.trim();
+  const userIdHeader = (req.headers['x-user-id'] as string | undefined)?.trim();
+  const userRoleHeader = (req.headers['x-user-role'] as string | undefined)?.trim();
+
+  const adminPinBody = req.body?.adminPin ? String(req.body.adminPin).trim() : undefined;
+  const adminUsernameBody = req.body?.adminUsername ? String(req.body.adminUsername).trim() : undefined;
+  const userIdBody = req.body?.userId ? String(req.body.userId).trim() : undefined;
+
+  const providedPin = adminPinHeader || adminPinBody;
+
+  // 1. If an admin PIN is provided, verify against any user with role === 'admin'
+  if (providedPin) {
+    const adminByPin = db.users.find((u) => u.role === 'admin' && u.pin === providedPin);
+    if (adminByPin) {
+      return { authorized: true, adminUser: adminByPin };
+    }
+  }
+
+  // 2. If a specific admin username is requested with pin
+  if (adminUsernameBody && providedPin) {
+    const adminUser = db.users.find(
+      (u) => u.role === 'admin' && u.username.toLowerCase() === adminUsernameBody.toLowerCase() && u.pin === providedPin
+    );
+    if (adminUser) {
+      return { authorized: true, adminUser };
+    }
+  }
+
+  // 3. If authenticated user ID is supplied, check their role in database
+  const checkUserId = userIdHeader || userIdBody;
+  if (checkUserId) {
+    const foundUser = db.users.find((u) => u.id === checkUserId);
+    if (foundUser && foundUser.role === 'admin') {
+      return { authorized: true, adminUser: foundUser };
+    }
+  }
+
+  // 4. If x-user-role is admin and matches an admin user in db
+  if (userRoleHeader === 'admin') {
+    const anyAdmin = db.users.find((u) => u.role === 'admin');
+    if (anyAdmin) {
+      return { authorized: true, adminUser: anyAdmin };
+    }
+  }
+
+  return {
+    authorized: false,
+    error: 'Acesso negado: Somente usuários com permissão de administrador podem executar esta ação.',
+  };
+}
+
 // Products & Inventory Routes
 app.get('/api/products', (_req: Request, res: Response) => {
   res.json(db.products);
 });
 
+// Adicionar produto (Apenas Administrador)
 app.post('/api/products', (req: Request, res: Response) => {
-  const { name, category, price, stock, sku, barcode, type, unit, costPrice } = req.body;
+  const auth = verifyAdminAuthorization(req);
+  if (!auth.authorized) {
+    return res.status(403).json({ error: auth.error || 'Apenas administradores podem adicionar produtos.' });
+  }
+
+  const { name, category, price, stock, sku, barcode, type, unit, costPrice, imageUrl } = req.body;
   if (!name || price === undefined) {
-    return res.status(400).json({ error: 'Nome e preço são obrigatórios' });
+    return res.status(400).json({ error: 'Nome e preço de venda são obrigatórios.' });
   }
 
   const newProduct: Product = {
     id: `prod-${Date.now()}`,
     sku: sku || `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
     barcode: barcode || `${Date.now()}`,
-    name,
+    name: String(name).trim(),
     category: category || 'Geral',
     type: type === 'service' ? 'service' : 'product',
     price: Number(price),
-    costPrice: Number(costPrice) || Number(price) * 0.4,
+    costPrice: costPrice !== undefined ? Number(costPrice) : Number(price) * 0.4,
     stock: type === 'service' ? 9999 : Number(stock) || 0,
     unit: unit || 'un',
+    imageUrl: imageUrl || undefined,
   };
 
   db.products.push(newProduct);
+  db.lastBackupTimestamp = new Date().toISOString();
   saveDb();
-  res.status(201).json(newProduct);
+  res.status(201).json({
+    success: true,
+    product: newProduct,
+    message: `Item "${newProduct.name}" cadastrado com sucesso pelo administrador!`,
+    products: db.products,
+  });
+});
+
+// Editar produto (Apenas Administrador)
+app.put('/api/products/:id', (req: Request, res: Response) => {
+  const auth = verifyAdminAuthorization(req);
+  if (!auth.authorized) {
+    return res.status(403).json({ error: auth.error || 'Apenas administradores podem editar produtos.' });
+  }
+
+  const { id } = req.params;
+  const productIndex = db.products.findIndex((p) => p.id === id);
+  if (productIndex === -1) {
+    return res.status(404).json({ error: 'Item não encontrado no catálogo.' });
+  }
+
+  const existing = db.products[productIndex];
+  const { name, category, price, stock, sku, barcode, type, unit, costPrice, imageUrl } = req.body;
+
+  const updatedProduct: Product = {
+    ...existing,
+    name: name !== undefined ? String(name).trim() : existing.name,
+    category: category !== undefined ? String(category).trim() : existing.category,
+    type: type !== undefined ? (type === 'service' ? 'service' : 'product') : existing.type,
+    price: price !== undefined ? Number(price) : existing.price,
+    costPrice: costPrice !== undefined ? Number(costPrice) : existing.costPrice,
+    stock: stock !== undefined ? (type === 'service' ? 9999 : Number(stock)) : existing.stock,
+    sku: sku !== undefined ? String(sku).trim() : existing.sku,
+    barcode: barcode !== undefined ? String(barcode).trim() : existing.barcode,
+    unit: unit !== undefined ? String(unit).trim() : existing.unit,
+    imageUrl: imageUrl !== undefined ? String(imageUrl).trim() : existing.imageUrl,
+  };
+
+  db.products[productIndex] = updatedProduct;
+  db.lastBackupTimestamp = new Date().toISOString();
+  saveDb();
+
+  res.json({
+    success: true,
+    product: updatedProduct,
+    message: `Item "${updatedProduct.name}" atualizado com sucesso pelo administrador!`,
+    products: db.products,
+  });
+});
+
+// Remover produto (Apenas Administrador)
+app.delete('/api/products/:id', (req: Request, res: Response) => {
+  const auth = verifyAdminAuthorization(req);
+  if (!auth.authorized) {
+    return res.status(403).json({ error: auth.error || 'Apenas administradores podem remover produtos.' });
+  }
+
+  const { id } = req.params;
+  const productIndex = db.products.findIndex((p) => p.id === id);
+  if (productIndex === -1) {
+    return res.status(404).json({ error: 'Item não encontrado no catálogo.' });
+  }
+
+  const [removed] = db.products.splice(productIndex, 1);
+  db.lastBackupTimestamp = new Date().toISOString();
+  saveDb();
+
+  res.json({
+    success: true,
+    deletedId: id,
+    message: `Item "${removed.name}" excluído do catálogo com sucesso pelo administrador!`,
+    products: db.products,
+  });
 });
 
 // Process Central Sale (auto-deduct central stock)
@@ -582,10 +807,18 @@ app.post('/api/sales', (req: Request, res: Response) => {
   const generatedId = saleData.id || `sale-${Date.now()}`;
   const saleNumber = saleData.saleNumber || `#${String(db.sales.length + 1001)}`;
 
+  let customerId = saleData.customerId;
+  if (!customerId && saleData.customerCpf) {
+    const cleanDigits = saleData.customerCpf.replace(/\D/g, '');
+    const found = db.customers.find((c) => c.cpf && c.cpf.replace(/\D/g, '') === cleanDigits);
+    if (found) customerId = found.id;
+  }
+
   const finalSale: Sale = {
     ...saleData,
     id: generatedId,
     saleNumber,
+    customerId,
     timestamp: saleData.timestamp || new Date().toISOString(),
     status: 'completed',
   };
@@ -676,18 +909,44 @@ app.post('/api/cash-register/open', (req: Request, res: Response) => {
 });
 
 app.post('/api/cash-register/movement', (req: Request, res: Response) => {
-  const { type, amount, reason, operatorId, operatorName } = req.body;
+  const { type, amount, reason, operatorId, operatorName, adminPin, adminUsername } = req.body;
   const currentSession = db.cashSessions.find((s) => s.status === 'open');
 
   if (!currentSession) {
     return res.status(400).json({ error: 'Nenhum caixa aberto para realizar movimentação.' });
   }
 
+  // Requirement: Sangria (retirada) requires Admin permission & PIN validation
+  if (type === 'sangria') {
+    const providedPin = (adminPin || (req.headers['x-admin-pin'] as string) || '').trim();
+    const targetUsername = (adminUsername || '').toLowerCase().trim();
+
+    let adminValidator: User | undefined;
+    if (targetUsername && providedPin) {
+      adminValidator = db.users.find(
+        (u) => u.role === 'admin' && u.username.toLowerCase() === targetUsername && u.pin === providedPin
+      );
+    } else if (providedPin) {
+      adminValidator = db.users.find((u) => u.role === 'admin' && u.pin === providedPin);
+    }
+
+    if (!adminValidator) {
+      return res.status(403).json({
+        error: 'A sangria de caixa requer autorização e validação obrigatória de um usuário com perfil de Administrador (PIN inválido ou não informado).',
+      });
+    }
+  }
+
+  const numericAmount = Math.abs(Number(amount));
+  if (isNaN(numericAmount) || numericAmount <= 0) {
+    return res.status(400).json({ error: 'Informe um valor válido maior que zero.' });
+  }
+
   const movement: CashMovement = {
     id: `mov-${Date.now()}`,
     sessionId: currentSession.id,
     type: type === 'sangria' ? 'sangria' : 'suprimento',
-    amount: Math.abs(Number(amount)),
+    amount: numericAmount,
     reason: reason || (type === 'sangria' ? 'Sangria de Caixa' : 'Suprimento de Troco'),
     operatorId: operatorId || 'usr-1',
     operatorName: operatorName || 'Operador',
@@ -700,20 +959,560 @@ app.post('/api/cash-register/movement', (req: Request, res: Response) => {
 });
 
 app.post('/api/cash-register/close', (req: Request, res: Response) => {
-  const { actualAmount, closingNotes } = req.body;
+  const { actualAmount, closingNotes, closedBy, closedByName, adminPin, adminUsername } = req.body;
   const currentSession = db.cashSessions.find((s) => s.status === 'open');
 
   if (!currentSession) {
     return res.status(400).json({ error: 'Nenhum caixa aberto para fechamento.' });
   }
 
+  // Requirement: "quando for fazer fechamento de caixa peça uma validação do usuário com permissão de admin"
+  const providedPin = (adminPin || (req.headers['x-admin-pin'] as string) || '').trim();
+  const targetUsername = (adminUsername || '').toLowerCase().trim();
+
+  let adminValidator: User | undefined;
+
+  if (targetUsername && providedPin) {
+    adminValidator = db.users.find(
+      (u) => u.role === 'admin' && u.username.toLowerCase() === targetUsername && u.pin === providedPin
+    );
+  } else if (providedPin) {
+    adminValidator = db.users.find((u) => u.role === 'admin' && u.pin === providedPin);
+  } else {
+    // Check if the operator closing is already an admin
+    const operator = db.users.find((u) => u.id === closedBy);
+    if (operator && operator.role === 'admin') {
+      adminValidator = operator;
+    }
+  }
+
+  if (!adminValidator) {
+    return res.status(403).json({
+      error: 'Validação de administrador obrigatória: É necessário informar o PIN de um usuário com permissão de administrador para encerrar o caixa.',
+    });
+  }
+
   currentSession.status = 'closed';
   currentSession.closedAt = new Date().toISOString();
   currentSession.actualAmount = Number(actualAmount) || 0;
   currentSession.closingNotes = closingNotes || '';
+  currentSession.closedBy = closedBy || currentSession.openedBy;
+  currentSession.closedByName = closedByName || currentSession.openedByName;
+  currentSession.validatedByAdmin = adminValidator.name;
 
+  db.lastBackupTimestamp = new Date().toISOString();
   saveDb();
-  res.json({ message: 'Caixa fechado com sucesso!', session: currentSession });
+  res.json({
+    success: true,
+    message: `Caixa fechado com sucesso e validado pela administradora ${adminValidator.name}!`,
+    session: currentSession,
+  });
+});
+
+// ==========================================
+// CUSTOMER AUTH & HISTORY APIS
+// ==========================================
+
+function safeCustomer(c: Customer) {
+  const { password, ...safe } = c;
+  return safe;
+}
+
+// Register new customer for Online Store (E-commerce)
+app.post('/api/online/customers/register', (req: Request, res: Response) => {
+  const { name, email, phone, cpf, password, address } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios para realizar o cadastro na loja online.' });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const cleanPhone = String(phone || '').trim();
+  const rawCpf = String(cpf || '').trim();
+  const rawDigitsCpf = rawCpf.replace(/\D/g, '');
+
+  const existingByEmail = db.customers.find((c) => c.email.toLowerCase() === cleanEmail);
+  if (existingByEmail) {
+    return res.status(400).json({ error: 'Já existe um cadastro com este e-mail. Por favor, faça login.' });
+  }
+
+  if (rawDigitsCpf.length >= 11) {
+    const existingByCpf = db.customers.find((c) => c.cpf && c.cpf.replace(/\D/g, '') === rawDigitsCpf);
+    if (existingByCpf) {
+      return res.status(400).json({ error: 'Já existe uma conta associada a este CPF. Acesse com seu e-mail cadastrado.' });
+    }
+  }
+
+  const newCustomer: Customer = {
+    id: `cust-${Date.now()}`,
+    name: String(name).trim(),
+    email: cleanEmail,
+    phone: cleanPhone,
+    cpf: rawCpf,
+    password: String(password).trim(),
+    address: address ? String(address).trim() : '',
+    createdAt: new Date().toISOString(),
+  };
+
+  db.customers.push(newCustomer);
+  db.lastBackupTimestamp = new Date().toISOString();
+  saveDb();
+
+  const token = `token_cust_${newCustomer.id}_${Date.now()}`;
+  res.status(201).json({
+    success: true,
+    customer: safeCustomer(newCustomer),
+    token,
+    message: 'Cadastro efetuado com sucesso na Loja Online!',
+  });
+});
+
+// Login customer in Online Store
+app.post('/api/online/customers/login', (req: Request, res: Response) => {
+  const { emailOrCpf, password } = req.body;
+
+  if (!emailOrCpf || !password) {
+    return res.status(400).json({ error: 'Informe seu e-mail ou CPF e sua senha para entrar.' });
+  }
+
+  const term = String(emailOrCpf).trim();
+  const cleanDigits = term.replace(/\D/g, '');
+  const pass = String(password).trim();
+
+  const customer = db.customers.find((c) => {
+    const matchEmail = c.email.toLowerCase() === term.toLowerCase();
+    const matchCpf = cleanDigits.length >= 11 && c.cpf.replace(/\D/g, '') === cleanDigits;
+    return matchEmail || matchCpf;
+  });
+
+  if (!customer) {
+    return res.status(401).json({ error: 'Conta não encontrada. Verifique os dados digitados ou crie um novo cadastro.' });
+  }
+
+  if (customer.password && customer.password !== pass) {
+    return res.status(401).json({ error: 'Senha incorreta. Tente novamente.' });
+  }
+
+  const token = `token_cust_${customer.id}_${Date.now()}`;
+  res.json({
+    success: true,
+    customer: safeCustomer(customer),
+    token,
+    message: `Olá, ${customer.name}! Login efetuado com sucesso.`,
+  });
+});
+
+// Current Customer session profile
+app.get('/api/online/customers/me', (req: Request, res: Response) => {
+  const customerId = (req.headers['x-customer-id'] as string) || (req.query.customerId as string);
+  if (!customerId) {
+    return res.status(401).json({ error: 'Sessão de cliente não informada.' });
+  }
+
+  const customer = db.customers.find((c) => c.id === customerId);
+  if (!customer) {
+    return res.status(404).json({ error: 'Cliente não encontrado.' });
+  }
+
+  res.json({ customer: safeCustomer(customer) });
+});
+
+// Online Customer orders history
+app.get('/api/online/customers/:id/orders', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const customer = db.customers.find((c) => c.id === id);
+  if (!customer) {
+    return res.status(404).json({ error: 'Cliente não encontrado.' });
+  }
+
+  const cleanCpf = customer.cpf ? customer.cpf.replace(/\D/g, '') : '';
+  const customerOrders = (db.onlineOrders || []).filter((o) => {
+    return (
+      o.customerId === id ||
+      (customer.email && o.customerEmail?.toLowerCase() === customer.email.toLowerCase()) ||
+      (cleanCpf && o.customerCpf?.replace(/\D/g, '') === cleanCpf)
+    );
+  });
+
+  res.json(customerOrders);
+});
+
+// List or search registered customers (for attendant search in physical store / PDV)
+app.get('/api/customers', (req: Request, res: Response) => {
+  const search = typeof req.query.search === 'string' ? req.query.search.toLowerCase().trim() : '';
+  let result = db.customers;
+
+  if (search) {
+    const cleanDigits = search.replace(/\D/g, '');
+    result = db.customers.filter((c) => {
+      const matchName = c.name.toLowerCase().includes(search);
+      const matchEmail = c.email.toLowerCase().includes(search);
+      const matchPhone = c.phone.includes(search);
+      const matchCpf = cleanDigits && c.cpf.replace(/\D/g, '').includes(cleanDigits);
+      return matchName || matchEmail || matchPhone || matchCpf;
+    });
+  }
+
+  res.json(result.map(safeCustomer));
+});
+
+// Create or update customer from physical store / PDV desk
+app.post('/api/customers', (req: Request, res: Response) => {
+  const { id, name, email, phone, cpf, address, notes } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Nome do cliente é obrigatório.' });
+  }
+
+  const rawCpf = cpf ? String(cpf).trim() : '';
+  const cleanDigits = rawCpf.replace(/\D/g, '');
+
+  let customer = id ? db.customers.find((c) => c.id === id) : null;
+  if (!customer && cleanDigits.length >= 11) {
+    customer = db.customers.find((c) => c.cpf && c.cpf.replace(/\D/g, '') === cleanDigits);
+  }
+
+  if (customer) {
+    customer.name = name.trim();
+    if (email) customer.email = email.trim().toLowerCase();
+    if (phone) customer.phone = phone.trim();
+    if (rawCpf) customer.cpf = rawCpf;
+    if (address !== undefined) customer.address = address.trim();
+    if (notes !== undefined) customer.notes = notes.trim();
+  } else {
+    customer = {
+      id: `cust-${Date.now()}`,
+      name: name.trim(),
+      email: email ? email.trim().toLowerCase() : '',
+      phone: phone ? phone.trim() : '',
+      cpf: rawCpf,
+      address: address ? address.trim() : '',
+      notes: notes ? notes.trim() : '',
+      createdAt: new Date().toISOString(),
+    };
+    db.customers.push(customer);
+  }
+
+  db.lastBackupTimestamp = new Date().toISOString();
+  saveDb();
+  res.json({ success: true, customer: safeCustomer(customer) });
+});
+
+// Complete Customer Purchase & Service Dossier
+// Allows cashier / attendant to see EVERYTHING the customer has bought (products)
+// or used (services), along with exact dates, times, sellers and amounts!
+app.get('/api/customers/history', (req: Request, res: Response) => {
+  const customerId = typeof req.query.customerId === 'string' ? req.query.customerId : undefined;
+  const cpf = typeof req.query.cpf === 'string' ? req.query.cpf : undefined;
+  const phone = typeof req.query.phone === 'string' ? req.query.phone : undefined;
+  const query = typeof req.query.query === 'string' ? req.query.query.toLowerCase().trim() : undefined;
+
+  let customer: Customer | undefined;
+
+  if (customerId) {
+    customer = db.customers.find((c) => c.id === customerId);
+  }
+
+  const cleanCpf = cpf ? cpf.replace(/\D/g, '') : '';
+  if (!customer && cleanCpf) {
+    customer = db.customers.find((c) => c.cpf && c.cpf.replace(/\D/g, '') === cleanCpf);
+  }
+
+  if (!customer && phone) {
+    const cleanPhoneDigits = phone.replace(/\D/g, '');
+    customer = db.customers.find((c) => c.phone && c.phone.replace(/\D/g, '').includes(cleanPhoneDigits));
+  }
+
+  if (!customer && query) {
+    const cleanQDigits = query.replace(/\D/g, '');
+    customer = db.customers.find((c) => {
+      const matchName = c.name.toLowerCase().includes(query);
+      const matchEmail = c.email.toLowerCase().includes(query);
+      const matchCpf = cleanQDigits.length >= 8 && c.cpf.replace(/\D/g, '').includes(cleanQDigits);
+      return matchName || matchEmail || matchCpf;
+    });
+  }
+
+  // If customer not registered, generate fallback record for lookup
+  if (!customer) {
+    if (cpf || query) {
+      customer = {
+        id: `guest-${cleanCpf || 'search'}`,
+        name: query && !query.includes('@') && !cleanCpf ? query : (cpf ? `Cliente CPF ${cpf}` : 'Cliente Avulso'),
+        email: '',
+        phone: '',
+        cpf: cpf || '',
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      return res.status(400).json({ error: 'Informe customerId, cpf ou query para buscar o histórico.' });
+    }
+  }
+
+  const targetCpfDigits = customer.cpf ? customer.cpf.replace(/\D/g, '') : '';
+  const targetEmail = customer.email ? customer.email.toLowerCase() : '';
+  const targetName = customer.name ? customer.name.toLowerCase() : '';
+
+  // 1. Gather all in-store physical sales for this customer
+  const customerSales = (db.sales || []).filter((s) => {
+    if (s.customerId && s.customerId === customer?.id) return true;
+    if (targetCpfDigits && s.customerCpf && s.customerCpf.replace(/\D/g, '') === targetCpfDigits) return true;
+    if (targetName && s.customerName && s.customerName.toLowerCase() === targetName) return true;
+    return false;
+  });
+
+  // 2. Gather all online orders for this customer
+  const customerOnlineOrders = (db.onlineOrders || []).filter((o) => {
+    if (o.customerId && o.customerId === customer?.id) return true;
+    if (targetCpfDigits && o.customerCpf && o.customerCpf.replace(/\D/g, '') === targetCpfDigits) return true;
+    if (targetEmail && o.customerEmail && o.customerEmail.toLowerCase() === targetEmail) return true;
+    if (targetName && o.customerName && o.customerName.toLowerCase() === targetName) return true;
+    return false;
+  });
+
+  // 3. Extract individual items with exact timestamp, type (product/service), seller
+  const historyItems: Array<{
+    id: string;
+    transactionId: string;
+    transactionNumber: string;
+    type: 'product' | 'service';
+    origin: 'pos' | 'online';
+    productId: string;
+    name: string;
+    sku: string;
+    price: number;
+    quantity: number;
+    discount: number;
+    total: number;
+    date: string;
+    sellerName: string;
+    paymentMethod: string;
+    status: string;
+  }> = [];
+
+  for (const sale of customerSales) {
+    for (const it of sale.items) {
+      historyItems.push({
+        id: `item-${sale.id}-${it.productId}-${Math.random().toString(36).substring(2, 6)}`,
+        transactionId: sale.id,
+        transactionNumber: sale.saleNumber,
+        type: it.type || (it.productId.startsWith('serv-') || it.sku?.startsWith('SRV-') ? 'service' : 'product'),
+        origin: 'pos',
+        productId: it.productId,
+        name: it.name,
+        sku: it.sku,
+        price: it.price,
+        quantity: it.quantity,
+        discount: it.discount || 0,
+        total: it.total,
+        date: sale.timestamp,
+        sellerName: sale.sellerName || 'Atendente PDV',
+        paymentMethod: sale.paymentMethod,
+        status: sale.status,
+      });
+    }
+  }
+
+  for (const ord of customerOnlineOrders) {
+    for (const it of ord.items) {
+      const isService = it.productId.startsWith('serv-') || it.sku?.startsWith('SRV-');
+      historyItems.push({
+        id: `item-${ord.id}-${it.productId}-${Math.random().toString(36).substring(2, 6)}`,
+        transactionId: ord.id,
+        transactionNumber: ord.orderNumber,
+        type: isService ? 'service' : 'product',
+        origin: 'online',
+        productId: it.productId,
+        name: it.name,
+        sku: it.sku,
+        price: it.price,
+        quantity: it.quantity,
+        discount: 0,
+        total: it.total,
+        date: ord.createdAt,
+        sellerName: 'Loja Online Oficial',
+        paymentMethod: ord.paymentMethod,
+        status: ord.orderStatus,
+      });
+    }
+  }
+
+  // Sort newest first
+  historyItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Transactions list
+  const transactions = [
+    ...customerSales.map((s) => ({
+      id: s.id,
+      number: s.saleNumber,
+      date: s.timestamp,
+      origin: 'pos' as const,
+      total: s.total,
+      sellerName: s.sellerName,
+      status: s.status,
+      itemsCount: s.items.reduce((acc, i) => acc + i.quantity, 0),
+      paymentMethod: s.paymentMethod,
+    })),
+    ...customerOnlineOrders.map((o) => ({
+      id: o.id,
+      number: o.orderNumber,
+      date: o.createdAt,
+      origin: 'online' as const,
+      total: o.total,
+      sellerName: 'Loja Online',
+      status: o.orderStatus,
+      itemsCount: o.items.reduce((acc, i) => acc + i.quantity, 0),
+      paymentMethod: o.paymentMethod,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalSpent = transactions.reduce((sum, t) => sum + (t.status !== 'cancelled' ? t.total : 0), 0);
+  const totalItemsPurchased = historyItems
+    .filter((i) => i.type === 'product' && i.status !== 'cancelled')
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const totalServicesUsed = historyItems
+    .filter((i) => i.type === 'service' && i.status !== 'cancelled')
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const firstVisit = transactions.length > 0 ? transactions[transactions.length - 1].date : customer.createdAt;
+  const lastVisit = transactions.length > 0 ? transactions[0].date : customer.createdAt;
+
+  res.json({
+    customer: safeCustomer(customer),
+    totalSpent,
+    totalTransactions: transactions.length,
+    totalItemsPurchased,
+    totalServicesUsed,
+    firstVisit,
+    lastVisit,
+    items: historyItems,
+    transactions,
+  });
+});
+
+app.get('/api/customers/:id/history', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const customer = db.customers.find((c) => c.id === id);
+  if (!customer) {
+    return res.status(404).json({ error: 'Cliente não encontrado.' });
+  }
+
+  const targetCpfDigits = customer.cpf ? customer.cpf.replace(/\D/g, '') : '';
+  const targetEmail = customer.email ? customer.email.toLowerCase() : '';
+  const targetName = customer.name ? customer.name.toLowerCase() : '';
+
+  const customerSales = (db.sales || []).filter((s) => {
+    if (s.customerId && s.customerId === customer.id) return true;
+    if (targetCpfDigits && s.customerCpf && s.customerCpf.replace(/\D/g, '') === targetCpfDigits) return true;
+    if (targetName && s.customerName && s.customerName.toLowerCase() === targetName) return true;
+    return false;
+  });
+
+  const customerOnlineOrders = (db.onlineOrders || []).filter((o) => {
+    if (o.customerId && o.customerId === customer.id) return true;
+    if (targetCpfDigits && o.customerCpf && o.customerCpf.replace(/\D/g, '') === targetCpfDigits) return true;
+    if (targetEmail && o.customerEmail && o.customerEmail.toLowerCase() === targetEmail) return true;
+    if (targetName && o.customerName && o.customerName.toLowerCase() === targetName) return true;
+    return false;
+  });
+
+  const historyItems: any[] = [];
+  for (const sale of customerSales) {
+    for (const it of sale.items) {
+      historyItems.push({
+        id: `item-${sale.id}-${it.productId}-${Math.random().toString(36).substring(2, 6)}`,
+        transactionId: sale.id,
+        transactionNumber: sale.saleNumber,
+        type: it.type || (it.productId.startsWith('serv-') || it.sku?.startsWith('SRV-') ? 'service' : 'product'),
+        origin: 'pos',
+        productId: it.productId,
+        name: it.name,
+        sku: it.sku,
+        price: it.price,
+        quantity: it.quantity,
+        discount: it.discount || 0,
+        total: it.total,
+        date: sale.timestamp,
+        sellerName: sale.sellerName || 'Atendente PDV',
+        paymentMethod: sale.paymentMethod,
+        status: sale.status,
+      });
+    }
+  }
+
+  for (const ord of customerOnlineOrders) {
+    for (const it of ord.items) {
+      const isService = it.productId.startsWith('serv-') || it.sku?.startsWith('SRV-');
+      historyItems.push({
+        id: `item-${ord.id}-${it.productId}-${Math.random().toString(36).substring(2, 6)}`,
+        transactionId: ord.id,
+        transactionNumber: ord.orderNumber,
+        type: isService ? 'service' : 'product',
+        origin: 'online',
+        productId: it.productId,
+        name: it.name,
+        sku: it.sku,
+        price: it.price,
+        quantity: it.quantity,
+        discount: 0,
+        total: it.total,
+        date: ord.createdAt,
+        sellerName: 'Loja Online Oficial',
+        paymentMethod: ord.paymentMethod,
+        status: ord.orderStatus,
+      });
+    }
+  }
+
+  historyItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const transactions = [
+    ...customerSales.map((s) => ({
+      id: s.id,
+      number: s.saleNumber,
+      date: s.timestamp,
+      origin: 'pos' as const,
+      total: s.total,
+      sellerName: s.sellerName,
+      status: s.status,
+      itemsCount: s.items.reduce((acc, i) => acc + i.quantity, 0),
+      paymentMethod: s.paymentMethod,
+    })),
+    ...customerOnlineOrders.map((o) => ({
+      id: o.id,
+      number: o.orderNumber,
+      date: o.createdAt,
+      origin: 'online' as const,
+      total: o.total,
+      sellerName: 'Loja Online',
+      status: o.orderStatus,
+      itemsCount: o.items.reduce((acc, i) => acc + i.quantity, 0),
+      paymentMethod: o.paymentMethod,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const totalSpent = transactions.reduce((sum, t) => sum + (t.status !== 'cancelled' ? t.total : 0), 0);
+  const totalItemsPurchased = historyItems
+    .filter((i) => i.type === 'product' && i.status !== 'cancelled')
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const totalServicesUsed = historyItems
+    .filter((i) => i.type === 'service' && i.status !== 'cancelled')
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const firstVisit = transactions.length > 0 ? transactions[transactions.length - 1].date : customer.createdAt;
+  const lastVisit = transactions.length > 0 ? transactions[0].date : customer.createdAt;
+
+  res.json({
+    customer: safeCustomer(customer),
+    totalSpent,
+    totalTransactions: transactions.length,
+    totalItemsPurchased,
+    totalServicesUsed,
+    firstVisit,
+    lastVisit,
+    items: historyItems,
+    transactions,
+  });
 });
 
 // ==========================================
@@ -725,9 +1524,10 @@ app.get('/api/online-orders', (_req: Request, res: Response) => {
   res.json(db.onlineOrders || []);
 });
 
-// Create new online order from E-Commerce storefront
+// Create new online order from E-Commerce storefront (Enforces customer account)
 app.post('/api/online-orders', (req: Request, res: Response) => {
   const {
+    customerId,
     customerName,
     customerEmail,
     customerPhone,
@@ -739,8 +1539,21 @@ app.post('/api/online-orders', (req: Request, res: Response) => {
     notes,
   } = req.body;
 
-  if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: 'Dados do pedido online incompletos.' });
+  let customer: Customer | undefined;
+  if (customerId) {
+    customer = db.customers.find((c) => c.id === customerId);
+  } else if (customerEmail) {
+    customer = db.customers.find((c) => c.email.toLowerCase() === String(customerEmail).toLowerCase().trim());
+  }
+
+  if (!customer) {
+    return res.status(401).json({
+      error: 'Autenticação necessária: É obrigatório fazer login ou cadastro na loja online para finalizar a compra.',
+    });
+  }
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'A sacola de compras está vazia.' });
   }
 
   // Calculate totals and deduct stock in central cloud database
@@ -776,12 +1589,13 @@ app.post('/api/online-orders', (req: Request, res: Response) => {
   const newOrder: OnlineOrder = {
     id: `ord-${Date.now()}`,
     orderNumber: `ONL-${Math.floor(1000 + Math.random() * 9000)}`,
-    customerName,
-    customerEmail: customerEmail || '',
-    customerPhone: customerPhone || '',
-    customerCpf: customerCpf || '',
+    customerId: customer.id,
+    customerName: customerName || customer.name,
+    customerEmail: customerEmail || customer.email,
+    customerPhone: customerPhone || customer.phone,
+    customerCpf: customerCpf || customer.cpf,
     deliveryType: deliveryType === 'delivery' ? 'delivery' : 'pickup',
-    deliveryAddress: deliveryAddress || (deliveryType === 'pickup' ? 'Retirada no Balcão da Loja Física' : ''),
+    deliveryAddress: deliveryAddress || (deliveryType === 'pickup' ? 'Retirada no Balcão da Loja Física' : customer.address || ''),
     items: processedItems,
     subtotal,
     shippingFee,

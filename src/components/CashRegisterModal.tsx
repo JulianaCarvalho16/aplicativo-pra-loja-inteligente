@@ -8,7 +8,11 @@ import {
   Unlock, 
   History, 
   AlertCircle, 
-  Check 
+  Check,
+  ShieldCheck,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { CashSession, User } from '../types';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
@@ -19,8 +23,17 @@ interface CashRegisterModalProps {
   session: CashSession | null;
   currentUser: User | null;
   onOpenCash: (initialAmount: number) => Promise<void>;
-  onRecordMovement: (type: 'sangria' | 'suprimento', amount: number, reason: string) => Promise<void>;
-  onCloseCash: (actualAmount: number, closingNotes: string) => Promise<void>;
+  onRecordMovement: (
+    type: 'sangria' | 'suprimento',
+    amount: number,
+    reason: string,
+    adminValidation?: { adminPin: string; adminUsername?: string }
+  ) => Promise<void>;
+  onCloseCash: (
+    actualAmount: number, 
+    closingNotes: string, 
+    adminValidation: { adminPin: string; adminUsername?: string }
+  ) => Promise<void>;
 }
 
 export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
@@ -41,10 +54,18 @@ export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
   const [movType, setMovType] = useState<'sangria' | 'suprimento'>('sangria');
   const [movAmount, setMovAmount] = useState('');
   const [movReason, setMovReason] = useState('');
+  const [sangriaAdminUsername, setSangriaAdminUsername] = useState('admin');
+  const [sangriaAdminPin, setSangriaAdminPin] = useState('');
+  const [showSangriaAdminPin, setShowSangriaAdminPin] = useState(false);
+  const [sangriaAdminError, setSangriaAdminError] = useState<string | null>(null);
 
   // Close Cash State
   const [actualAmountInput, setActualAmountInput] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
+  const [adminUsername, setAdminUsername] = useState('admin');
+  const [adminPin, setAdminPin] = useState('');
+  const [showAdminPin, setShowAdminPin] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -77,12 +98,35 @@ export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
   const handleMovementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!movAmount || parseFloat(movAmount) <= 0) return;
+    setSangriaAdminError(null);
+
+    if (movType === 'sangria') {
+      if (!sangriaAdminPin.trim()) {
+        setSangriaAdminError('É obrigatório informar o PIN de um Administrador para autorizar a sangria de caixa.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      await onRecordMovement(movType, parseFloat(movAmount), movReason);
+      await onRecordMovement(
+        movType,
+        parseFloat(movAmount),
+        movReason,
+        movType === 'sangria' ? { adminPin: sangriaAdminPin.trim(), adminUsername: sangriaAdminUsername } : undefined
+      );
       setMovAmount('');
       setMovReason('');
+      setSangriaAdminPin('');
+      setSangriaAdminError(null);
       setActiveTab('status');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao registrar movimentação.';
+      if (movType === 'sangria') {
+        setSangriaAdminError(msg);
+      } else {
+        alert(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -90,10 +134,25 @@ export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
 
   const handleCloseCashSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAdminError(null);
+
+    if (!adminPin || !adminPin.trim()) {
+      setAdminError('É obrigatório informar o PIN de um Administrador para validar e autorizar o fechamento do caixa.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await onCloseCash(parseFloat(actualAmountInput) || 0, closingNotes);
+      await onCloseCash(parseFloat(actualAmountInput) || 0, closingNotes, {
+        adminPin: adminPin.trim(),
+        adminUsername,
+      });
+      setAdminPin('');
+      setAdminError(null);
       setActiveTab('status');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha na validação do administrador.';
+      setAdminError(msg);
     } finally {
       setLoading(false);
     }
@@ -351,14 +410,95 @@ export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
                 />
               </div>
 
+              {/* Requirement: Sangria requires Admin Permission */}
+              {movType === 'sangria' && (
+                <div className="p-3.5 rounded-xl bg-slate-950/90 border border-rose-900/60 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-rose-400">
+                      <ShieldCheck className="w-4 h-4 text-rose-400" />
+                      <span>Autorização de Administrador Obrigatória (Sangria)</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300 font-mono">
+                      Permissão Admin
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Para conformidade e segurança da tesouraria, a retirada de dinheiro (sangria) exige a validação e PIN de um usuário com perfil de <strong>Administrador</strong>.
+                  </p>
+
+                  <div className="space-y-2.5 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        Administrador Responsável
+                      </label>
+                      <select
+                        value={sangriaAdminUsername}
+                        onChange={(e) => {
+                          setSangriaAdminUsername(e.target.value);
+                          setSangriaAdminError(null);
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-rose-500 font-medium"
+                      >
+                        <option value="admin">Ana Gestora (Administradora Geral)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <KeyRound className="w-3.5 h-3.5 text-rose-400" />
+                          PIN do Administrador (4 dígitos)
+                        </label>
+                        <span className="text-[10px] text-slate-500 font-mono">PIN padrão: 1234</span>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showSangriaAdminPin ? 'text' : 'password'}
+                          maxLength={6}
+                          required
+                          placeholder="Digite o PIN do Administrador..."
+                          value={sangriaAdminPin}
+                          onChange={(e) => {
+                            setSangriaAdminPin(e.target.value);
+                            setSangriaAdminError(null);
+                          }}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono tracking-widest text-slate-100 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs placeholder:text-slate-500 focus:outline-none focus:border-rose-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSangriaAdminPin(!showSangriaAdminPin)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 hover:text-slate-200"
+                        >
+                          {showSangriaAdminPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {sangriaAdminError && (
+                      <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-800 text-xs text-rose-300 flex items-start gap-2 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                        <span>{sangriaAdminError}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-lg transition ${
+                className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-lg transition flex items-center justify-center gap-2 ${
                   movType === 'sangria' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-emerald-600 hover:bg-emerald-500'
                 }`}
               >
-                {loading ? 'Registrando...' : `Confirmar ${movType === 'sangria' ? 'Sangria' : 'Suprimento'}`}
+                {movType === 'sangria' && <ShieldCheck className="w-4 h-4" />}
+                {loading
+                  ? 'Registrando...'
+                  : movType === 'sangria'
+                  ? 'Autorizar com Admin e Confirmar Sangria'
+                  : 'Confirmar Suprimento'}
               </button>
             </form>
           ) : (
@@ -403,12 +543,87 @@ export const CashRegisterModal: React.FC<CashRegisterModalProps> = ({
                 />
               </div>
 
+              {/* Admin Validation Section */}
+              <div className="p-4 rounded-xl bg-slate-950/90 border border-amber-900/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>Validação de Administrador Obrigatória</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300 font-mono">
+                    Supervisor / Admin
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Para controle fiscal e auditoria financeira, o fechamento do caixa deve ser validado por um usuário com perfil de <strong>Administrador</strong>.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      Administrador Responsável
+                    </label>
+                    <select
+                      value={adminUsername}
+                      onChange={(e) => {
+                        setAdminUsername(e.target.value);
+                        setAdminError(null);
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-500 font-medium"
+                    >
+                      <option value="admin">Ana Gestora (Administradora Geral)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                        PIN do Administrador (4 dígitos)
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-mono">PIN padrão: 1234</span>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type={showAdminPin ? 'text' : 'password'}
+                        maxLength={6}
+                        required
+                        placeholder="Digite o PIN do Administrador..."
+                        value={adminPin}
+                        onChange={(e) => {
+                          setAdminPin(e.target.value);
+                          setAdminError(null);
+                        }}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono tracking-widest text-slate-100 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPin(!showAdminPin)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 hover:text-slate-200"
+                      >
+                        {showAdminPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {adminError && (
+                    <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-800 text-xs text-rose-300 flex items-start gap-2 animate-in fade-in">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                      <span>{adminError}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold text-xs uppercase tracking-wider text-white shadow-lg transition"
+                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold text-xs uppercase tracking-wider text-white shadow-lg transition flex items-center justify-center gap-2"
               >
-                {loading ? 'Fechando...' : 'Confirmar Fechamento do Caixa'}
+                <ShieldCheck className="w-4 h-4" />
+                {loading ? 'Validando e Fechando...' : 'Validar com Admin e Fechar Caixa'}
               </button>
             </form>
           )}

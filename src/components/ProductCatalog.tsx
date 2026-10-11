@@ -1,18 +1,22 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Plus, Sparkles, Wrench, Package, Barcode, Check, Coffee, Smartphone, Shirt, ShoppingBag } from 'lucide-react';
-import { Product } from '../types';
+import { Search, Plus, Sparkles, Wrench, Package, Barcode, Check, Coffee, Smartphone, Shirt, ShoppingBag, Settings2, Lock, ShieldCheck } from 'lucide-react';
+import { Product, User } from '../types';
 import { formatCurrency } from '../utils/formatters';
 
 interface ProductCatalogProps {
   products: Product[];
   onAddToCart: (product: Product) => void;
   searchRef?: React.RefObject<HTMLInputElement | null>;
+  onOpenProductManagement?: () => void;
+  currentUser?: User | null;
 }
 
 export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   products,
   onAddToCart,
   searchRef,
+  onOpenProductManagement,
+  currentUser,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
@@ -124,6 +128,28 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           <Barcode className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-mono text-[11px]">Leitor Ativo</span>
         </div>
+
+        {onOpenProductManagement && (
+          <button
+            onClick={onOpenProductManagement}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition shrink-0 ${
+              currentUser?.role === 'admin'
+                ? 'bg-emerald-950/70 border-emerald-600 text-emerald-300 hover:bg-emerald-900/60 shadow-sm'
+                : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-750'
+            }`}
+            title="Adicionar, editar ou remover itens da loja (Permissão de Administrador)"
+          >
+            <Package className="w-4 h-4 text-emerald-400" />
+            <span className="hidden md:inline">Gerenciar Itens</span>
+            {currentUser?.role === 'admin' ? (
+              <span className="px-1.5 py-0.2 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                Admin
+              </span>
+            ) : (
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Category Segmented Tabs (Interactive Filter Controls) */}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Globe, Check, AlertCircle, Trash2 } from 'lucide-react';
+import { X, UserPlus, Globe, Check, AlertCircle, Trash2, History, Search } from 'lucide-react';
 import { maskCPF, validateCPF, cleanCPF } from '../utils/formatters';
+import { fetchCustomers } from '../services/api';
+import { Customer } from '../types';
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface CustomerModalProps {
   clientIp: string;
   onSaveCustomer: (cpf: string, name: string) => void;
   onClearCustomer: () => void;
+  onOpenCustomerHistory?: (query?: string) => void;
 }
 
 export const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -20,16 +23,19 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   clientIp,
   onSaveCustomer,
   onClearCustomer,
+  onOpenCustomerHistory,
 }) => {
   const [cpf, setCpf] = useState(currentCpf);
   const [name, setName] = useState(currentName);
   const [touched, setTouched] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     if (isOpen) {
       setCpf(currentCpf);
       setName(currentName);
       setTouched(false);
+      fetchCustomers().then(setCustomers).catch(() => {});
     }
   }, [isOpen, currentCpf, currentName]);
 
@@ -135,6 +141,46 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
+
+          {/* Quick Select from Registered Customers */}
+          {customers.length > 0 && !currentCpf && (
+            <div className="pt-1">
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                Ou selecione cliente cadastrado:
+              </label>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                {customers.slice(0, 6).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setCpf(maskCPF(c.cpf || ''));
+                      setName(c.name);
+                      setTouched(true);
+                    }}
+                    className="px-2 py-1 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300 hover:text-emerald-300 hover:border-emerald-600 transition"
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Access to Customer Dossier / Purchase & Service History */}
+          {onOpenCustomerHistory && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCustomerHistory(cpf || name);
+                onClose();
+              }}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-400 border border-emerald-800/80 hover:border-emerald-600 flex items-center justify-center gap-2 text-xs font-bold transition shadow-sm"
+            >
+              <History className="w-4 h-4 text-emerald-400" />
+              <span>Ver Histórico de Compras & Serviços do Cliente (F8)</span>
+            </button>
+          )}
 
           {/* Action Buttons */}
           <div className="pt-2 flex items-center gap-2">

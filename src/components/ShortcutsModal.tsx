@@ -13,6 +13,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
     { key: 'F2', label: 'Buscar Produto', desc: 'Foco imediato na barra de busca ou leitor de código de barras' },
     { key: 'F3', label: 'CPF / Cliente', desc: 'Abre a janela de identificação do cliente e validação de CPF' },
     { key: 'F4', label: 'Caixa / Movimentação', desc: 'Abre o controle de abertura, sangria e suprimento de caixa' },
+    { key: 'F6', label: 'Ficha do Cliente (Dossiê)', desc: 'Consulta produtos comprados e serviços utilizados pelo cliente com data e valor' },
     { key: 'F7', label: 'Resumo do Caixa', desc: 'Visualiza saldo estimado em gaveta e histórico do turno' },
     { key: 'F8', label: 'Dashboard de Vendas', desc: 'Abre os gráficos de vendas por hora e formas de pagamento (Recharts)' },
     { key: 'F9', label: 'Finalizar Venda', desc: 'Abre a tela rápida de pagamento (Dinheiro, PIX, Cartão)' },
